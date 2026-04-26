@@ -54,10 +54,6 @@ setInterval(load, 2000);
 </html>
   `);
 });
-
-
-
-
 const express = require("express");
 const app = express();
 
