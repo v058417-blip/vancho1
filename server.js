@@ -6,8 +6,8 @@ app.use(express.json());
 // ===== НАСТРОЙКИ =====
 const variants = ["натурал", "гомосек"];
 
-const MIN_MS = 60 * 1000; // 1 минута
-const MAX_MS = 3 * 24 * 60 * 60 * 1000; // 3 дня
+const MIN_MS = 60 * 1000;
+const MAX_MS = 3 * 24 * 60 * 60 * 1000;
 
 function randomInterval() {
   return Math.floor(Math.random() * (MAX_MS - MIN_MS)) + MIN_MS;
@@ -25,7 +25,7 @@ let state = {
 
 let manualTimeout = null;
 
-// ===== АВТО ПЕРЕКЛЮЧЕНИЕ =====
+// ===== АВТО РЕЖИМ =====
 function autoToggle() {
   if (mode !== "auto") return;
 
@@ -41,7 +41,6 @@ function autoToggle() {
   console.log("AUTO →", state.text);
 }
 
-// проверка каждые 5 сек
 setInterval(() => {
   if (mode === "auto" && Date.now() > state.nextChange) {
     autoToggle();
@@ -49,8 +48,6 @@ setInterval(() => {
 }, 5000);
 
 // ===== API =====
-
-// получить состояние
 app.get("/state", (req, res) => {
   res.json({
     text: state.text,
@@ -58,7 +55,7 @@ app.get("/state", (req, res) => {
   });
 });
 
-// админка
+// ===== АДМИНКА =====
 app.post("/update", (req, res) => {
   const { text, seconds } = req.body;
 
@@ -87,7 +84,7 @@ app.post("/update", (req, res) => {
       updatedAt: Date.now()
     };
 
-    console.log("BACK TO AUTO MODE");
+    console.log("BACK TO AUTO");
   }, time);
 
   res.json({ ok: true, state, mode });
@@ -112,64 +109,84 @@ body{
   justify-content:center;
   font-family: Arial;
   overflow:hidden;
-  background:#eef2ff;
+  background:#0b0b14;
 }
 
-/* 🌊 фиолетовые "водяные" формы */
-body::before,
-body::after{
+/* ===== ЖИДКАЯ ФИОЛЕТОВАЯ ВОДА ===== */
+.water{
+  position:absolute;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+}
+
+/* основные “массы воды” */
+.water::before,
+.water::after,
+.water i{
   content:"";
   position:absolute;
-  width:600px;
-  height:600px;
+  width:700px;
+  height:700px;
   border-radius:50%;
-  filter: blur(100px);
+  filter: blur(120px);
   opacity:0.65;
-  animation: float 10s ease-in-out infinite;
+  animation: flow 8s ease-in-out infinite;
 }
 
-body::before{
-  background: rgba(124,58,237,0.6);
-  top:-150px;
-  left:-150px;
+/* фиолетовая глубина */
+.water::before{
+  background: radial-gradient(circle, rgba(124,58,237,0.9), transparent 60%);
+  top:-200px;
+  left:-200px;
 }
 
-body::after{
-  background: rgba(147,197,253,0.5);
-  bottom:-150px;
-  right:-150px;
-  animation-delay:-4s;
+/* голубой оттенок */
+.water::after{
+  background: radial-gradient(circle, rgba(147,197,253,0.5), transparent 60%);
+  bottom:-200px;
+  right:-200px;
+  animation-delay:-3s;
 }
 
-@keyframes float{
-  0%   {transform: translate(0,0) scale(1);}
-  25%  {transform: translate(120px,-90px) scale(1.1);}
-  50%  {transform: translate(-100px,120px) scale(0.95);}
-  75%  {transform: translate(80px,60px) scale(1.05);}
-  100% {transform: translate(0,0) scale(1);}
+/* центральные блики */
+.water i{
+  background: radial-gradient(circle, rgba(255,255,255,0.25), transparent 70%);
+  top:30%;
+  left:30%;
+  animation-delay:-6s;
 }
 
-/* 💧 стекло */
+@keyframes flow{
+  0%   {transform:translate(0,0) scale(1);}
+  25%  {transform:translate(120px,-90px) scale(1.15);}
+  50%  {transform:translate(-110px,130px) scale(0.95);}
+  75%  {transform:translate(90px,70px) scale(1.1);}
+  100% {transform:translate(0,0) scale(1);}
+}
+
+/* ===== стеклянная карточка ===== */
 h1{
   font-size:48px;
-  color:#1f2937;
+  color:#e5e7eb;
   padding:30px 50px;
   border-radius:25px;
 
-  background: rgba(255,255,255,0.35);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(30px);
 
-  border:1px solid rgba(255,255,255,0.4);
+  border:1px solid rgba(255,255,255,0.15);
 
   box-shadow:
-    inset 0 0 50px rgba(255,255,255,0.25),
-    0 10px 40px rgba(0,0,0,0.08);
+    inset 0 0 60px rgba(124,58,237,0.15),
+    inset 0 0 80px rgba(147,197,253,0.1),
+    0 10px 50px rgba(0,0,0,0.5);
 }
 
 span{
   font-family:cursive;
-  color:#4f46e5;
+  color:#c4b5fd;
+  text-shadow:0 0 15px rgba(124,58,237,0.6);
 }
 
 /* админ */
@@ -177,18 +194,20 @@ span{
   position:fixed;
   top:10px;
   left:10px;
-  width:40px;
-  height:40px;
-  background:rgba(255,255,255,0.35);
+  width:42px;
+  height:42px;
+  background:rgba(255,255,255,0.1);
   border-radius:10px;
   cursor:pointer;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  border:1px solid rgba(255,255,255,0.2);
 }
 </style>
 </head>
 
 <body>
 
+<div class="water"><i></i></div>
 <div id="adminBtn"></div>
 
 <h1>сейчас Ваня <span id="text">...</span></h1>
@@ -202,12 +221,12 @@ async function load(){
 load();
 setInterval(load, 2000);
 
-// админка
+// ===== АДМИНКА =====
 document.getElementById("adminBtn").onclick = async () => {
   const pass = prompt("пароль");
-  if(pass !== "wTMWe175") return;
+  if(pass !== "4724") return;
 
-  const text = prompt("введи любой текст");
+  const text = prompt("введи текст");
   const sec = prompt("на сколько секунд");
 
   await fetch("/update", {
@@ -228,5 +247,5 @@ document.getElementById("adminBtn").onclick = async () => {
 // ===== СЕРВЕР =====
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("FINAL SYSTEM running on port", PORT);
+  console.log("WATER SYSTEM RUNNING");
 });
