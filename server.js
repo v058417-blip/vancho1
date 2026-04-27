@@ -3,22 +3,22 @@ const app = express();
 
 app.use(express.json());
 
-// текущее состояние сайта
+// состояние
 let state = {
   text: "натурал",
   until: null,
   updatedAt: Date.now()
 };
 
-// API: получить состояние
+// получить состояние
 app.get("/state", (req, res) => {
   res.json(state);
 });
 
-// API: обновить состояние
+// обновить состояние
 app.post("/update", (req, res) => {
   state = {
-    text: req.body.text || "натурал",
+    text: req.body.text || state.text,
     until: req.body.until || null,
     updatedAt: Date.now()
   };
@@ -26,7 +26,7 @@ app.post("/update", (req, res) => {
   res.json({ ok: true, state });
 });
 
-// главная страница сайта
+// главная страница
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -49,32 +49,61 @@ body{
 
 h1{
   font-size:48px;
-  color:#111827;
 }
 
 span{
   color:#4f46e5;
   font-family: cursive;
 }
+
+#adminBtn{
+  position:fixed;
+  top:10px;
+  left:10px;
+  width:40px;
+  height:40px;
+  background:rgba(128,128,128,0.3);
+  border-radius:8px;
+  cursor:pointer;
+}
 </style>
 </head>
 
 <body>
-  <h1>сейчас Ваня <span id="text">...</span></h1>
+
+<div id="adminBtn"></div>
+
+<h1>сейчас Ваня <span id="text">...</span></h1>
 
 <script>
-async function load(){
-  try {
-    const res = await fetch("/state");
-    const data = await res.json();
-    document.getElementById("text").textContent = data.text;
-  } catch(e) {
-    document.getElementById("text").textContent = "ошибка";
-  }
-}
+const API = "";
 
+async function load(){
+  const res = await fetch("/state");
+  const data = await res.json();
+  document.getElementById("text").textContent = data.text;
+}
 load();
 setInterval(load, 2000);
+
+// админка
+document.getElementById("adminBtn").onclick = async () => {
+  const pass = prompt("пароль");
+  if(pass !== "wTMWe175") return;
+
+  const text = prompt("текст:");
+  const sec = prompt("время (сек):");
+
+  const until = Date.now() + (Number(sec || 5) * 1000);
+
+  await fetch("/update", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ text, until })
+  });
+
+  load();
+};
 </script>
 
 </body>
@@ -82,9 +111,7 @@ setInterval(load, 2000);
   `);
 });
 
-// порт Render
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
 });
