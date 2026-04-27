@@ -3,13 +3,13 @@ const app = express();
 
 app.use(express.json());
 
-// 2 состояния
+// базовые варианты
 const variants = ["натурал", "гомосек"];
 
-// умный интервал
-const MIN_MS = 60 * 1000;
-const MAX_MS = 3 * 24 * 60 * 60 * 1000;
+// режим системы
+let mode = "auto"; // auto | manual
 
+// состояние
 let state = {
   index: 0,
   text: variants[0],
@@ -17,11 +17,22 @@ let state = {
   updatedAt: Date.now()
 };
 
+// временный ручной режим
+let manualTimeout = null;
+
+// интервалы авто-режима
+const MIN_MS = 60 * 1000;
+const MAX_MS = 3 * 24 * 60 * 60 * 1000;
+
+// случайный интервал
 function randomInterval() {
   return Math.floor(Math.random() * (MAX_MS - MIN_MS)) + MIN_MS;
 }
 
-function toggleState() {
+// переключение авто-режима
+function toggleAuto() {
+  if (mode !== "auto") return;
+
   state.index = state.index === 0 ? 1 : 0;
 
   state = {
@@ -31,31 +42,55 @@ function toggleState() {
     updatedAt: Date.now()
   };
 
-  console.log("AUTO TOGGLE →", state.text);
+  console.log("AUTO →", state.text);
 }
 
+// проверка авто-режима
 setInterval(() => {
-  if (Date.now() > state.nextChange) toggleState();
-}, 10000);
+  if (mode === "auto" && Date.now() > state.nextChange) {
+    toggleAuto();
+  }
+}, 5000);
 
-// API
+// API состояние
 app.get("/state", (req, res) => {
-  res.json(state);
+  res.json({
+    text: state.text,
+    mode
+  });
 });
 
+// API обновление (админка)
 app.post("/update", (req, res) => {
-  if (req.body.text && variants.includes(req.body.text)) {
-    state.index = variants.indexOf(req.body.text);
-  }
+  const { text, seconds } = req.body;
+
+  // включаем ручной режим
+  mode = "manual";
 
   state = {
-    ...state,
-    text: variants[state.index],
-    nextChange: Date.now() + randomInterval(),
+    index: -1,
+    text: text || "натурал",
+    nextChange: null,
     updatedAt: Date.now()
   };
 
-  res.json({ ok: true, state });
+  console.log("MANUAL →", text);
+
+  // сброс обратно в авто-режим
+  if (manualTimeout) clearTimeout(manualTimeout);
+
+  const time = Number(seconds || 10) * 1000;
+
+  manualTimeout = setTimeout(() => {
+    mode = "auto";
+    state.index = Math.floor(Math.random() * 2);
+    state.text = variants[state.index];
+    state.nextChange = Date.now() + randomInterval();
+
+    console.log("BACK TO AUTO MODE");
+  }, time);
+
+  res.json({ ok: true, state, mode });
 });
 
 // сайт
@@ -77,60 +112,66 @@ body{
   justify-content:center;
   font-family: Arial;
   overflow:hidden;
-  background:#eaf2ff;
+  background:#eef3ff;
 }
 
-/* 💧 "капли света" */
+/* 💧 водяные фиолетовые блоки */
 body::before,
-body::after{
+body::after,
+body div.glow{
   content:"";
   position:absolute;
-  width:600px;
-  height:600px;
+  width:500px;
+  height:500px;
   border-radius:50%;
-  filter: blur(80px);
-  opacity:0.6;
-  animation: float 18s infinite ease-in-out;
+  filter: blur(90px);
+  opacity:0.7;
+  animation: move 8s infinite ease-in-out;
 }
 
 body::before{
-  background: rgba(124,58,237,0.6); /* фиолетовый */
-  top:-150px;
-  left:-150px;
+  background: rgba(124,58,237,0.7);
+  top:-120px;
+  left:-120px;
 }
 
 body::after{
-  background: rgba(173,216,230,0.6); /* нежный голубой */
-  bottom:-150px;
-  right:-150px;
-  animation-delay: -8s;
+  background: rgba(147,197,253,0.5);
+  bottom:-120px;
+  right:-120px;
+  animation-delay:-3s;
 }
 
-@keyframes float{
-  0%   {transform: translate(0,0) scale(1);}
-  25%  {transform: translate(120px, -80px) scale(1.1);}
-  50%  {transform: translate(-100px, 100px) scale(0.9);}
-  75%  {transform: translate(80px, 60px) scale(1.05);}
-  100% {transform: translate(0,0) scale(1);}
+.glow{
+  background: rgba(124,58,237,0.4);
+  top:30%;
+  left:40%;
+  animation-delay:-6s;
 }
 
-/* 💧 стекло (вода) */
+@keyframes move{
+  0%{transform:translate(0,0) scale(1);}
+  25%{transform:translate(120px,-80px) scale(1.1);}
+  50%{transform:translate(-100px,120px) scale(0.9);}
+  75%{transform:translate(80px,60px) scale(1.2);}
+  100%{transform:translate(0,0) scale(1);}
+}
+
+/* стекло */
 h1{
   font-size:48px;
   color:#1f2937;
   padding:30px 50px;
   border-radius:25px;
 
-  background: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.3);
   backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
 
   border:1px solid rgba(255,255,255,0.4);
 
-  /* мягкие водяные переливы */
   box-shadow:
-    inset 0 0 40px rgba(255,255,255,0.3),
-    0 10px 40px rgba(0,0,0,0.08);
+    inset 0 0 50px rgba(255,255,255,0.3),
+    0 10px 40px rgba(0,0,0,0.1);
 }
 
 span{
@@ -138,24 +179,23 @@ span{
   color:#4f46e5;
 }
 
-/* админка */
+/* админ */
 #adminBtn{
   position:fixed;
   top:10px;
   left:10px;
   width:40px;
   height:40px;
-  background:rgba(255,255,255,0.25);
+  background:rgba(255,255,255,0.3);
   border-radius:10px;
   cursor:pointer;
-  backdrop-filter: blur(12px);
-  border:1px solid rgba(255,255,255,0.3);
+  backdrop-filter: blur(10px);
 }
 </style>
 </head>
 
 <body>
-
+<div class="glow"></div>
 <div id="adminBtn"></div>
 
 <h1>сейчас Ваня <span id="text">...</span></h1>
@@ -174,12 +214,13 @@ document.getElementById("adminBtn").onclick = async () => {
   const pass = prompt("пароль");
   if(pass !== "wTMWe175") return;
 
-  const choice = prompt("натурал / гомосек");
+  const text = prompt("введи любой текст");
+  const sec = prompt("на сколько секунд");
 
   await fetch("/update", {
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ text: choice })
+    body:JSON.stringify({ text, seconds: sec })
   });
 
   load();
@@ -191,8 +232,8 @@ document.getElementById("adminBtn").onclick = async () => {
   `);
 });
 
-// сервер
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("Water glass server running on port", PORT);
+  console.log("FULL MODE server running on port", PORT);
 });
+
