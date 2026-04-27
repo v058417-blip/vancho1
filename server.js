@@ -3,13 +3,19 @@ const app = express();
 
 app.use(express.json());
 
-// базовые варианты
+// ===== НАСТРОЙКИ =====
 const variants = ["натурал", "гомосек"];
 
-// режим системы
-let mode = "auto"; // auto | manual
+const MIN_MS = 60 * 1000; // 1 минута
+const MAX_MS = 3 * 24 * 60 * 60 * 1000; // 3 дня
 
-// состояние
+function randomInterval() {
+  return Math.floor(Math.random() * (MAX_MS - MIN_MS)) + MIN_MS;
+}
+
+// ===== СОСТОЯНИЕ =====
+let mode = "auto";
+
 let state = {
   index: 0,
   text: variants[0],
@@ -17,20 +23,10 @@ let state = {
   updatedAt: Date.now()
 };
 
-// временный ручной режим
 let manualTimeout = null;
 
-// интервалы авто-режима
-const MIN_MS = 60 * 1000;
-const MAX_MS = 3 * 24 * 60 * 60 * 1000;
-
-// случайный интервал
-function randomInterval() {
-  return Math.floor(Math.random() * (MAX_MS - MIN_MS)) + MIN_MS;
-}
-
-// переключение авто-режима
-function toggleAuto() {
+// ===== АВТО ПЕРЕКЛЮЧЕНИЕ =====
+function autoToggle() {
   if (mode !== "auto") return;
 
   state.index = state.index === 0 ? 1 : 0;
@@ -45,14 +41,16 @@ function toggleAuto() {
   console.log("AUTO →", state.text);
 }
 
-// проверка авто-режима
+// проверка каждые 5 сек
 setInterval(() => {
   if (mode === "auto" && Date.now() > state.nextChange) {
-    toggleAuto();
+    autoToggle();
   }
 }, 5000);
 
-// API состояние
+// ===== API =====
+
+// получить состояние
 app.get("/state", (req, res) => {
   res.json({
     text: state.text,
@@ -60,11 +58,10 @@ app.get("/state", (req, res) => {
   });
 });
 
-// API обновление (админка)
+// админка
 app.post("/update", (req, res) => {
   const { text, seconds } = req.body;
 
-  // включаем ручной режим
   mode = "manual";
 
   state = {
@@ -74,18 +71,21 @@ app.post("/update", (req, res) => {
     updatedAt: Date.now()
   };
 
-  console.log("MANUAL →", text);
-
-  // сброс обратно в авто-режим
   if (manualTimeout) clearTimeout(manualTimeout);
 
   const time = Number(seconds || 10) * 1000;
 
   manualTimeout = setTimeout(() => {
     mode = "auto";
+
     state.index = Math.floor(Math.random() * 2);
-    state.text = variants[state.index];
-    state.nextChange = Date.now() + randomInterval();
+
+    state = {
+      ...state,
+      text: variants[state.index],
+      nextChange: Date.now() + randomInterval(),
+      updatedAt: Date.now()
+    };
 
     console.log("BACK TO AUTO MODE");
   }, time);
@@ -93,7 +93,7 @@ app.post("/update", (req, res) => {
   res.json({ ok: true, state, mode });
 });
 
-// сайт
+// ===== САЙТ =====
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -112,66 +112,59 @@ body{
   justify-content:center;
   font-family: Arial;
   overflow:hidden;
-  background:#eef3ff;
+  background:#eef2ff;
 }
 
-/* 💧 водяные фиолетовые блоки */
+/* 🌊 фиолетовые "водяные" формы */
 body::before,
-body::after,
-body div.glow{
+body::after{
   content:"";
   position:absolute;
-  width:500px;
-  height:500px;
+  width:600px;
+  height:600px;
   border-radius:50%;
-  filter: blur(90px);
-  opacity:0.7;
-  animation: move 8s infinite ease-in-out;
+  filter: blur(100px);
+  opacity:0.65;
+  animation: float 10s ease-in-out infinite;
 }
 
 body::before{
-  background: rgba(124,58,237,0.7);
-  top:-120px;
-  left:-120px;
+  background: rgba(124,58,237,0.6);
+  top:-150px;
+  left:-150px;
 }
 
 body::after{
   background: rgba(147,197,253,0.5);
-  bottom:-120px;
-  right:-120px;
-  animation-delay:-3s;
+  bottom:-150px;
+  right:-150px;
+  animation-delay:-4s;
 }
 
-.glow{
-  background: rgba(124,58,237,0.4);
-  top:30%;
-  left:40%;
-  animation-delay:-6s;
+@keyframes float{
+  0%   {transform: translate(0,0) scale(1);}
+  25%  {transform: translate(120px,-90px) scale(1.1);}
+  50%  {transform: translate(-100px,120px) scale(0.95);}
+  75%  {transform: translate(80px,60px) scale(1.05);}
+  100% {transform: translate(0,0) scale(1);}
 }
 
-@keyframes move{
-  0%{transform:translate(0,0) scale(1);}
-  25%{transform:translate(120px,-80px) scale(1.1);}
-  50%{transform:translate(-100px,120px) scale(0.9);}
-  75%{transform:translate(80px,60px) scale(1.2);}
-  100%{transform:translate(0,0) scale(1);}
-}
-
-/* стекло */
+/* 💧 стекло */
 h1{
   font-size:48px;
   color:#1f2937;
   padding:30px 50px;
   border-radius:25px;
 
-  background: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.35);
   backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
 
   border:1px solid rgba(255,255,255,0.4);
 
   box-shadow:
-    inset 0 0 50px rgba(255,255,255,0.3),
-    0 10px 40px rgba(0,0,0,0.1);
+    inset 0 0 50px rgba(255,255,255,0.25),
+    0 10px 40px rgba(0,0,0,0.08);
 }
 
 span{
@@ -186,7 +179,7 @@ span{
   left:10px;
   width:40px;
   height:40px;
-  background:rgba(255,255,255,0.3);
+  background:rgba(255,255,255,0.35);
   border-radius:10px;
   cursor:pointer;
   backdrop-filter: blur(10px);
@@ -195,7 +188,7 @@ span{
 </head>
 
 <body>
-<div class="glow"></div>
+
 <div id="adminBtn"></div>
 
 <h1>сейчас Ваня <span id="text">...</span></h1>
@@ -232,8 +225,8 @@ document.getElementById("adminBtn").onclick = async () => {
   `);
 });
 
+// ===== СЕРВЕР =====
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("FULL MODE server running on port", PORT);
+  console.log("FINAL SYSTEM running on port", PORT);
 });
-
