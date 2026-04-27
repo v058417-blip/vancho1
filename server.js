@@ -3,30 +3,73 @@ const app = express();
 
 app.use(express.json());
 
-// состояние
+// строго 2 состояния
+const variants = ["натурал", "гомосек"];
+
+// интервалы (1 минута – 3 дня)
+const MIN_MS = 60 * 1000;
+const MAX_MS = 3 * 24 * 60 * 60 * 1000;
+
+// начальное состояние
 let state = {
-  text: "натурал",
-  until: null,
+  index: 0,
+  text: variants[0],
+  nextChange: Date.now() + randomInterval(),
   updatedAt: Date.now()
 };
 
+// случайный интервал
+function randomInterval() {
+  return Math.floor(Math.random() * (MAX_MS - MIN_MS)) + MIN_MS;
+}
+
+// переключение текста
+function toggleState() {
+  state.index = state.index === 0 ? 1 : 0;
+
+  state = {
+    ...state,
+    text: variants[state.index],
+    nextChange: Date.now() + randomInterval(),
+    updatedAt: Date.now()
+  };
+
+  console.log("AUTO TOGGLE →", state.text);
+}
+
+// проверка времени
+setInterval(() => {
+  if (Date.now() > state.nextChange) {
+    toggleState();
+  }
+}, 10000);
+
 // получить состояние
 app.get("/state", (req, res) => {
-  res.json(state);
+  res.json({
+    text: state.text,
+    nextChange: state.nextChange,
+    updatedAt: state.updatedAt
+  });
 });
 
-// обновить состояние
+// ручное управление
 app.post("/update", (req, res) => {
+  if (req.body.text && variants.includes(req.body.text)) {
+    state.index = variants.indexOf(req.body.text);
+  }
+
   state = {
-    text: req.body.text || state.text,
-    until: req.body.until || null,
+    ...state,
+    text: variants[state.index],
+    nextChange: Date.now() + randomInterval(),
     updatedAt: Date.now()
   };
 
   res.json({ ok: true, state });
 });
 
-// главная страница
+// сайт
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -43,18 +86,12 @@ body{
   display:flex;
   align-items:center;
   justify-content:center;
-  font-family: Arial, sans-serif;
+  font-family: Arial;
   background: linear-gradient(120deg,#c7d2fe,#e9d5ff,#bae6fd);
 }
 
-h1{
-  font-size:48px;
-}
-
-span{
-  color:#4f46e5;
-  font-family: cursive;
-}
+h1{font-size:48px;}
+span{color:#4f46e5;font-family:cursive;}
 
 #adminBtn{
   position:fixed;
@@ -76,12 +113,10 @@ span{
 <h1>сейчас Ваня <span id="text">...</span></h1>
 
 <script>
-const API = "";
-
 async function load(){
-  const res = await fetch("/state");
-  const data = await res.json();
-  document.getElementById("text").textContent = data.text;
+  const r = await fetch("/state");
+  const d = await r.json();
+  document.getElementById("text").textContent = d.text;
 }
 load();
 setInterval(load, 2000);
@@ -91,15 +126,12 @@ document.getElementById("adminBtn").onclick = async () => {
   const pass = prompt("пароль");
   if(pass !== "wTMWe175") return;
 
-  const text = prompt("текст:");
-  const sec = prompt("время (сек):");
-
-  const until = Date.now() + (Number(sec || 5) * 1000);
+  const choice = prompt("выбери: натурал / гомосек");
 
   await fetch("/update", {
     method: "POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ text, until })
+    body: JSON.stringify({ text: choice })
   });
 
   load();
@@ -113,5 +145,5 @@ document.getElementById("adminBtn").onclick = async () => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("Smart toggle server running on port", PORT);
 });
