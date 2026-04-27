@@ -49,13 +49,9 @@ setInterval(() => {
 
 // ===== API =====
 app.get("/state", (req, res) => {
-  res.json({
-    text: state.text,
-    mode
-  });
+  res.json({ text: state.text, mode });
 });
 
-// ===== АДМИНКА =====
 app.post("/update", (req, res) => {
   const { text, seconds } = req.body;
 
@@ -109,84 +105,100 @@ body{
   justify-content:center;
   font-family: Arial;
   overflow:hidden;
-  background:#0b0b14;
+
+  /* 🌌 ТЁМНО-СИНИЙ ГЛУБОКИЙ ФОН */
+  background: radial-gradient(circle at 30% 30%, #0b1a3a, #050816 70%, #02030a);
 }
 
-/* ===== ЖИДКАЯ ФИОЛЕТОВАЯ ВОДА ===== */
+/* ===== ЖИДКАЯ ВОДА ===== */
 .water{
   position:absolute;
-  width:100%;
-  height:100%;
+  inset:0;
   overflow:hidden;
 }
 
-/* основные “массы воды” */
-.water::before,
-.water::after,
-.water i{
-  content:"";
+/* основные слои воды */
+.drop{
   position:absolute;
-  width:700px;
-  height:700px;
+  width:600px;
+  height:600px;
   border-radius:50%;
-  filter: blur(120px);
+  filter: blur(110px);
   opacity:0.65;
-  animation: flow 8s ease-in-out infinite;
+  mix-blend-mode: screen;
+  animation: drift 12s infinite ease-in-out;
 }
 
-/* фиолетовая глубина */
-.water::before{
-  background: radial-gradient(circle, rgba(124,58,237,0.9), transparent 60%);
-  top:-200px;
-  left:-200px;
+/* фиолетовая вода */
+.d1{
+  background: radial-gradient(circle, rgba(124,58,237,0.8), transparent 65%);
+  top:-20%;
+  left:-10%;
+  animation-duration: 14s;
 }
 
-/* голубой оттенок */
-.water::after{
-  background: radial-gradient(circle, rgba(147,197,253,0.5), transparent 60%);
-  bottom:-200px;
-  right:-200px;
-  animation-delay:-3s;
+/* синяя вода */
+.d2{
+  background: radial-gradient(circle, rgba(59,130,246,0.6), transparent 65%);
+  bottom:-25%;
+  right:-15%;
+  animation-duration: 18s;
+  animation-delay:-4s;
 }
 
-/* центральные блики */
-.water i{
-  background: radial-gradient(circle, rgba(255,255,255,0.25), transparent 70%);
-  top:30%;
+/* светлая вода */
+.d3{
+  background: radial-gradient(circle, rgba(147,197,253,0.4), transparent 60%);
+  top:40%;
   left:30%;
-  animation-delay:-6s;
+  animation-duration: 20s;
+  animation-delay:-8s;
 }
 
-@keyframes flow{
+/* блики */
+.glow{
+  position:absolute;
+  width:300px;
+  height:300px;
+  border-radius:50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.35), transparent 70%);
+  filter: blur(60px);
+  mix-blend-mode: screen;
+  animation: drift 10s infinite ease-in-out;
+}
+
+/* хаотичное движение */
+@keyframes drift{
   0%   {transform:translate(0,0) scale(1);}
-  25%  {transform:translate(120px,-90px) scale(1.15);}
-  50%  {transform:translate(-110px,130px) scale(0.95);}
-  75%  {transform:translate(90px,70px) scale(1.1);}
+  20%  {transform:translate(120px,-80px) scale(1.2);}
+  40%  {transform:translate(-100px,130px) scale(0.9);}
+  60%  {transform:translate(150px,60px) scale(1.1);}
+  80%  {transform:translate(-120px,-90px) scale(1);}
   100% {transform:translate(0,0) scale(1);}
 }
 
-/* ===== стеклянная карточка ===== */
+/* ===== СТЕКЛО ===== */
 h1{
   font-size:48px;
   color:#e5e7eb;
   padding:30px 50px;
   border-radius:25px;
 
-  background: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.06);
   backdrop-filter: blur(30px);
 
-  border:1px solid rgba(255,255,255,0.15);
+  border:1px solid rgba(255,255,255,0.12);
 
   box-shadow:
-    inset 0 0 60px rgba(124,58,237,0.15),
-    inset 0 0 80px rgba(147,197,253,0.1),
-    0 10px 50px rgba(0,0,0,0.5);
+    inset 0 0 60px rgba(124,58,237,0.12),
+    inset 0 0 80px rgba(59,130,246,0.08),
+    0 10px 50px rgba(0,0,0,0.6);
 }
 
 span{
   font-family:cursive;
   color:#c4b5fd;
-  text-shadow:0 0 15px rgba(124,58,237,0.6);
+  text-shadow:0 0 15px rgba(124,58,237,0.5);
 }
 
 /* админ */
@@ -196,18 +208,24 @@ span{
   left:10px;
   width:42px;
   height:42px;
-  background:rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.08);
   border-radius:10px;
   cursor:pointer;
   backdrop-filter: blur(12px);
-  border:1px solid rgba(255,255,255,0.2);
+  border:1px solid rgba(255,255,255,0.15);
 }
 </style>
 </head>
 
 <body>
 
-<div class="water"><i></i></div>
+<div class="water">
+  <div class="drop d1"></div>
+  <div class="drop d2"></div>
+  <div class="drop d3"></div>
+  <div class="glow"></div>
+</div>
+
 <div id="adminBtn"></div>
 
 <h1>сейчас Ваня <span id="text">...</span></h1>
@@ -221,13 +239,13 @@ async function load(){
 load();
 setInterval(load, 2000);
 
-// ===== АДМИНКА =====
+// админка
 document.getElementById("adminBtn").onclick = async () => {
   const pass = prompt("пароль");
   if(pass !== "4724") return;
 
-  const text = prompt("введи текст");
-  const sec = prompt("на сколько секунд");
+  const text = prompt("текст");
+  const sec = prompt("время (сек)");
 
   await fetch("/update", {
     method:"POST",
@@ -247,5 +265,5 @@ document.getElementById("adminBtn").onclick = async () => {
 // ===== СЕРВЕР =====
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("WATER SYSTEM RUNNING");
+  console.log("OCEAN WATER RUNNING");
 });
