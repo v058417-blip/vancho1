@@ -3,14 +3,13 @@ const app = express();
 
 app.use(express.json());
 
-// строго 2 состояния
+// 2 состояния
 const variants = ["натурал", "гомосек"];
 
-// интервалы (1 минута – 3 дня)
+// интервалы (1 мин – 3 дня)
 const MIN_MS = 60 * 1000;
 const MAX_MS = 3 * 24 * 60 * 60 * 1000;
 
-// начальное состояние
 let state = {
   index: 0,
   text: variants[0],
@@ -18,12 +17,11 @@ let state = {
   updatedAt: Date.now()
 };
 
-// случайный интервал
 function randomInterval() {
   return Math.floor(Math.random() * (MAX_MS - MIN_MS)) + MIN_MS;
 }
 
-// переключение текста
+// переключение
 function toggleState() {
   state.index = state.index === 0 ? 1 : 0;
 
@@ -37,14 +35,14 @@ function toggleState() {
   console.log("AUTO TOGGLE →", state.text);
 }
 
-// проверка времени
+// авто-обновление
 setInterval(() => {
   if (Date.now() > state.nextChange) {
     toggleState();
   }
 }, 10000);
 
-// получить состояние
+// API
 app.get("/state", (req, res) => {
   res.json({
     text: state.text,
@@ -53,7 +51,6 @@ app.get("/state", (req, res) => {
   });
 });
 
-// ручное управление
 app.post("/update", (req, res) => {
   if (req.body.text && variants.includes(req.body.text)) {
     state.index = variants.indexOf(req.body.text);
@@ -87,11 +84,43 @@ body{
   align-items:center;
   justify-content:center;
   font-family: Arial;
-  background: linear-gradient(120deg,#c7d2fe,#e9d5ff,#bae6fd);
+  overflow:hidden;
+
+  background: linear-gradient(135deg,#ff4fd8,#7c3aed,#00d4ff,#22c55e);
+  background-size:400% 400%;
+  animation: gradientMove 10s ease infinite;
 }
 
-h1{font-size:48px;}
-span{color:#4f46e5;font-family:cursive;}
+@keyframes gradientMove{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
+}
+
+h1{
+  font-size:48px;
+  color:white;
+  padding:30px 50px;
+  border-radius:25px;
+
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  border:1px solid rgba(255,255,255,0.25);
+
+  box-shadow:
+    0 0 20px rgba(255,255,255,0.4),
+    0 0 60px rgba(124,58,237,0.4),
+    0 0 120px rgba(0,212,255,0.3);
+
+  text-shadow:0 0 10px rgba(255,255,255,0.6);
+}
+
+span{
+  font-family:cursive;
+  text-shadow:0 0 15px rgba(255,255,255,0.8);
+}
 
 #adminBtn{
   position:fixed;
@@ -99,9 +128,12 @@ span{color:#4f46e5;font-family:cursive;}
   left:10px;
   width:40px;
   height:40px;
-  background:rgba(128,128,128,0.3);
-  border-radius:8px;
+  background:rgba(255,255,255,0.15);
+  border-radius:10px;
   cursor:pointer;
+  backdrop-filter: blur(10px);
+  border:1px solid rgba(255,255,255,0.2);
+  box-shadow:0 0 20px rgba(255,255,255,0.2);
 }
 </style>
 </head>
@@ -126,12 +158,12 @@ document.getElementById("adminBtn").onclick = async () => {
   const pass = prompt("пароль");
   if(pass !== "wTMWe175") return;
 
-  const choice = prompt("выбери: натурал / гомосек");
+  const choice = prompt("натурал / гомосек");
 
   await fetch("/update", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ text: choice })
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({ text: choice })
   });
 
   load();
@@ -143,7 +175,8 @@ document.getElementById("adminBtn").onclick = async () => {
   `);
 });
 
+// сервер
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("Smart toggle server running on port", PORT);
+  console.log("Server running on port", PORT);
 });
