@@ -54,6 +54,8 @@ setInterval(load, 2000);
 </html>
   `);
 });
+
+
 const express = require("express");
 const app = express();
 
@@ -65,6 +67,7 @@ let state = {
   updatedAt: Date.now()
 };
 
+// API
 app.get("/state", (req, res) => {
   res.json(state);
 });
@@ -77,8 +80,52 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-const PORT = process.env.PORT || 3000;
+// ГЛАВНАЯ СТРАНИЦА
+app.get("/", (req, res) => {
+  res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Сейчас Ваня</title>
+<style>
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:sans-serif;
+  background: linear-gradient(120deg, #c7d2fe, #e9d5ff, #bae6fd);
+}
+h1{
+  font-size:50px;
+}
+span{
+  color:#4f46e5;
+  font-family:cursive;
+}
+</style>
+</head>
+<body>
+<h1>сейчас Ваня <span id="t">...</span></h1>
 
+<script>
+async function load(){
+  const r = await fetch("/state");
+  const d = await r.json();
+  document.getElementById("t").textContent = d.text;
+}
+load();
+setInterval(load, 2000);
+</script>
+
+</body>
+</html>
+  `);
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
 });
