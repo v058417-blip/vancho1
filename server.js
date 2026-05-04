@@ -9,13 +9,6 @@ const FILE = path.join(__dirname, "state.json");
 
 const variants = ["натурал", "гомосек"];
 
-const MIN_MS = 60000;
-const MAX_MS = 3 * 24 * 60 * 60 * 1000;
-
-function randomInterval() {
-  return Math.floor(Math.random() * (MAX_MS - MIN_MS)) + MIN_MS;
-}
-
 function loadState() {
   try {
     return JSON.parse(fs.readFileSync(FILE, "utf8"));
@@ -24,7 +17,7 @@ function loadState() {
       mode: "auto",
       index: Math.floor(Math.random() * 2),
       text: variants[Math.floor(Math.random() * 2)],
-      nextChange: Date.now() + randomInterval(),
+      nextChange: Date.now() + 60000,
       until: null
     };
   }
@@ -37,17 +30,16 @@ function saveState(s) {
 let state = loadState();
 
 function updateState() {
-  if (state.mode === "manual" && Date.now() > state.until) {
+  const now = Date.now();
+
+  if (state.mode === "manual" && now > state.until) {
     state.mode = "auto";
-    state.index = Math.floor(Math.random() * 2);
-    state.text = variants[state.index];
-    state.nextChange = Date.now() + randomInterval();
   }
 
-  if (state.mode === "auto" && Date.now() > state.nextChange) {
-    state.index = state.index === 0 ? 1 : 0;
+  if (state.mode === "auto" && now > state.nextChange) {
+    state.index = 1 - state.index;
     state.text = variants[state.index];
-    state.nextChange = Date.now() + randomInterval();
+    state.nextChange = now + (60 * 1000 + Math.random() * 200000);
   }
 
   saveState(state);
@@ -73,7 +65,7 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-// FRONTEND
+// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -88,8 +80,12 @@ body{
   overflow:hidden;
   font-family:Arial;
 
-  /* 🌌 глубокий сине-фиолетовый фон */
-  background: radial-gradient(circle at 30% 20%, #1e1b4b, #0b1020 60%, #050816);
+  /* 🌌 ГАРАНТИРОВАННО ТЁМНЫЙ ФОН (НЕ БЕЛЫЙ) */
+  background:
+    radial-gradient(circle at 20% 30%, rgba(99,102,241,0.35), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(168,85,247,0.30), transparent 45%),
+    radial-gradient(circle at 50% 80%, rgba(59,130,246,0.25), transparent 50%),
+    linear-gradient(180deg, #050816 0%, #0b1020 50%, #050816 100%);
 }
 
 canvas{
@@ -124,7 +120,7 @@ span{
   color:#a78bfa;
 }
 
-/* админ кнопка */
+/* админ */
 #adminBtn{
   position:fixed;
   top:10px;
@@ -156,13 +152,13 @@ function resize(){
 resize();
 onresize = resize;
 
-// 🌊 крупная “жидкость”
+// 🌊 жидкие массы
 let blobs = Array.from({length:6}, () => ({
   x: Math.random()*innerWidth,
   y: Math.random()*innerHeight,
   vx:(Math.random()-0.5)*0.4,
   vy:(Math.random()-0.5)*0.4,
-  r:220 + Math.random()*180
+  r:200 + Math.random()*160
 }));
 
 let pointer = {x:null,y:null};
@@ -172,11 +168,9 @@ function animate(){
 
   blobs.forEach(b=>{
 
-    // плавное самостоятельное движение
     b.vx += (Math.random()-0.5)*0.015;
     b.vy += (Math.random()-0.5)*0.015;
 
-    // реакция на касание
     if(pointer.x !== null){
       const dx = pointer.x - b.x;
       const dy = pointer.y - b.y;
@@ -195,8 +189,8 @@ function animate(){
     b.y += b.vy;
 
     const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
-    g.addColorStop(0,"rgba(99,102,241,0.35)");
-    g.addColorStop(0.4,"rgba(124,58,237,0.25)");
+    g.addColorStop(0,"rgba(99,102,241,0.30)");
+    g.addColorStop(0.5,"rgba(124,58,237,0.20)");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle = g;
@@ -209,7 +203,7 @@ function animate(){
 }
 animate();
 
-// управление
+// pointer
 window.addEventListener("mousemove",e=>{
   pointer.x = e.clientX;
   pointer.y = e.clientY;
@@ -230,12 +224,12 @@ async function load(){
 load();
 setInterval(load,2000);
 
-// 🧩 админка (простая как ты просила)
+// админка
 adminBtn.onclick = async ()=>{
   const pass = prompt("пароль");
   if(pass !== "4724") return;
 
-  const text = prompt("введи текст");
+  const text = prompt("текст");
   const sec = prompt("время в секундах");
 
   await fetch("/update",{
