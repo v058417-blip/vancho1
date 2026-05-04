@@ -55,6 +55,7 @@ function updateState() {
 
 setInterval(updateState, 5000);
 
+// API
 app.get("/state", (req, res) => {
   updateState();
   res.json(state);
@@ -72,6 +73,7 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
+// FRONTEND
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -86,7 +88,7 @@ body{
   overflow:hidden;
   font-family:Arial;
 
-  /* 🌌 ТОТ САМЫЙ ТЁМНЫЙ ФОН */
+  /* 🌌 глубокий сине-фиолетовый фон */
   background: radial-gradient(circle at 30% 20%, #1e1b4b, #0b1020 60%, #050816);
 }
 
@@ -96,7 +98,7 @@ canvas{
   left:0;
 }
 
-/* 💎 стекло (остаётся мягким) */
+/* 💎 стекло */
 h1{
   position:absolute;
   top:50%;
@@ -122,7 +124,7 @@ span{
   color:#a78bfa;
 }
 
-/* админ */
+/* админ кнопка */
 #adminBtn{
   position:fixed;
   top:10px;
@@ -154,13 +156,13 @@ function resize(){
 resize();
 onresize = resize;
 
-// 🌊 КРУПНЫЕ “ЖИДКИЕ” ЧАСТИЦЫ
+// 🌊 крупная “жидкость”
 let blobs = Array.from({length:6}, () => ({
   x: Math.random()*innerWidth,
   y: Math.random()*innerHeight,
   vx:(Math.random()-0.5)*0.4,
   vy:(Math.random()-0.5)*0.4,
-  r:220 + Math.random()*180   // 👈 крупнее и мягче
+  r:220 + Math.random()*180
 }));
 
 let pointer = {x:null,y:null};
@@ -170,7 +172,7 @@ function animate(){
 
   blobs.forEach(b=>{
 
-    // самодвижение (плавное течение)
+    // плавное самостоятельное движение
     b.vx += (Math.random()-0.5)*0.015;
     b.vy += (Math.random()-0.5)*0.015;
 
@@ -192,7 +194,6 @@ function animate(){
     b.x += b.vx;
     b.y += b.vy;
 
-    // 🌌 глубокий glow как “жидкость”
     const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
     g.addColorStop(0,"rgba(99,102,241,0.35)");
     g.addColorStop(0.4,"rgba(124,58,237,0.25)");
@@ -229,7 +230,7 @@ async function load(){
 load();
 setInterval(load,2000);
 
-// админка (как раньше)
+// 🧩 админка (простая как ты просила)
 adminBtn.onclick = async ()=>{
   const pass = prompt("пароль");
   if(pass !== "4724") return;
