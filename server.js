@@ -1,4 +1,4 @@
-const express = require("express");
+  const express = require("express");
 const fs = require("fs");
 const path = require("path");
 
@@ -39,7 +39,7 @@ function updateState() {
   if (state.mode === "auto" && now > state.nextChange) {
     state.index = 1 - state.index;
     state.text = variants[state.index];
-    state.nextChange = now + (60 * 1000 + Math.random() * 200000);
+    state.nextChange = now + 60000 + Math.random() * 200000;
   }
 
   saveState(state);
@@ -47,7 +47,6 @@ function updateState() {
 
 setInterval(updateState, 5000);
 
-// API
 app.get("/state", (req, res) => {
   updateState();
   res.json(state);
@@ -65,7 +64,6 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -75,21 +73,22 @@ app.get("/", (req, res) => {
 <title>Liquid</title>
 
 <style>
-body{
+html, body {
   margin:0;
+  padding:0;
   overflow:hidden;
-  font-family:Arial;
-
-  /* 🌌 ГАРАНТИРОВАННО ТЁМНЫЙ ФОН (НЕ БЕЛЫЙ) */
-  background:
-    radial-gradient(circle at 20% 30%, rgba(99,102,241,0.35), transparent 40%),
-    radial-gradient(circle at 80% 60%, rgba(168,85,247,0.30), transparent 45%),
-    radial-gradient(circle at 50% 80%, rgba(59,130,246,0.25), transparent 50%),
-    linear-gradient(180deg, #050816 0%, #0b1020 50%, #050816 100%);
 }
 
+/* 🌌 ФИКСИРОВАННЫЙ ТЁМНЫЙ ФОН (КАК ТЕБЕ НРАВИЛСЯ) */
+body{
+  font-family:Arial;
+
+  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816) !important;
+}
+
+/* canvas поверх */
 canvas{
-  position:absolute;
+  position:fixed;
   top:0;
   left:0;
 }
@@ -152,13 +151,13 @@ function resize(){
 resize();
 onresize = resize;
 
-// 🌊 жидкие массы
+/* 🌊 ЖИДКОСТЬ (мягкая, крупная, как раньше нравилась) */
 let blobs = Array.from({length:6}, () => ({
   x: Math.random()*innerWidth,
   y: Math.random()*innerHeight,
   vx:(Math.random()-0.5)*0.4,
   vy:(Math.random()-0.5)*0.4,
-  r:200 + Math.random()*160
+  r:220 + Math.random()*180
 }));
 
 let pointer = {x:null,y:null};
@@ -203,7 +202,7 @@ function animate(){
 }
 animate();
 
-// pointer
+/* pointer */
 window.addEventListener("mousemove",e=>{
   pointer.x = e.clientX;
   pointer.y = e.clientY;
@@ -215,7 +214,7 @@ window.addEventListener("touchmove",e=>{
   pointer.y = t.clientY;
 });
 
-// текст
+/* текст */
 async function load(){
   const r = await fetch("/state");
   const d = await r.json();
@@ -224,7 +223,7 @@ async function load(){
 load();
 setInterval(load,2000);
 
-// админка
+/* админка */
 adminBtn.onclick = async ()=>{
   const pass = prompt("пароль");
   if(pass !== "4724") return;
