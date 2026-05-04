@@ -1,270 +1,235 @@
 const express = require("express");
-const app = express();
+const fs = require("fs");
+const path = require("path");
 
+const app = express();
 app.use(express.json());
 
-// ===== ВАРИАНТЫ =====
+const FILE = path.join(__dirname, "state.json");
+
 const variants = ["натурал", "гомосек"];
 
-// ===== РАНДОМ =====
-const MIN_MS = 60 * 1000;
+const MIN_MS = 60000;
 const MAX_MS = 3 * 24 * 60 * 60 * 1000;
 
 function randomInterval() {
   return Math.floor(Math.random() * (MAX_MS - MIN_MS)) + MIN_MS;
 }
 
-// ===== СОСТОЯНИЕ =====
-let mode = "auto";
-
-let state = {
-  index: 0,
-  text: variants[0],
-  nextChange: Date.now() + randomInterval(),
-  updatedAt: Date.now()
-};
-
-let manualTimeout = null;
-
-// ===== АВТО ПЕРЕКЛЮЧЕНИЕ =====
-function autoToggle() {
-  if (mode !== "auto") return;
-
-  state.index = state.index === 0 ? 1 : 0;
-
-  state = {
-    ...state,
-    text: variants[state.index],
-    nextChange: Date.now() + randomInterval(),
-    updatedAt: Date.now()
-  };
-
-  console.log("AUTO →", state.text);
+// ===== STATE =====
+function loadState() {
+  try {
+    return JSON.parse(fs.readFileSync(FILE, "utf8"));
+  } catch {
+    return {
+      mode: "auto",
+      index: Math.floor(Math.random() * 2),
+      text: variants[Math.floor(Math.random() * 2)],
+      nextChange: Date.now() + randomInterval(),
+      until: null
+    };
+  }
 }
 
-setInterval(() => {
-  if (mode === "auto" && Date.now() > state.nextChange) {
-    autoToggle();
+function saveState(s) {
+  fs.writeFileSync(FILE, JSON.stringify(s));
+}
+
+let state = loadState();
+
+function updateState() {
+  if (state.mode === "manual") {
+    if (Date.now() > state.until) {
+      state.mode = "auto";
+      state.index = Math.floor(Math.random() * 2);
+      state.text = variants[state.index];
+      state.nextChange = Date.now() + randomInterval();
+    }
   }
-}, 5000);
+
+  if (state.mode === "auto" && Date.now() > state.nextChange) {
+    state.index = state.index === 0 ? 1 : 0;
+    state.text = variants[state.index];
+    state.nextChange = Date.now() + randomInterval();
+  }
+
+  saveState(state);
+}
+
+setInterval(updateState, 5000);
 
 // ===== API =====
 app.get("/state", (req, res) => {
-  res.json({ text: state.text, mode });
+  updateState();
+  res.json(state);
 });
 
 app.post("/update", (req, res) => {
   const { text, seconds } = req.body;
 
-  mode = "manual";
+  state.mode = "manual";
+  state.text = text;
+  state.until = Date.now() + Number(seconds) * 1000;
 
-  state = {
-    index: -1,
-    text: text || "натурал",
-    nextChange: null,
-    updatedAt: Date.now()
-  };
+  saveState(state);
 
-  if (manualTimeout) clearTimeout(manualTimeout);
-
-  const time = Number(seconds || 10) * 1000;
-
-  manualTimeout = setTimeout(() => {
-    mode = "auto";
-
-    state.index = Math.floor(Math.random() * 2);
-
-    state = {
-      ...state,
-      text: variants[state.index],
-      nextChange: Date.now() + randomInterval(),
-      updatedAt: Date.now()
-    };
-
-    console.log("BACK TO AUTO");
-  }, time);
-
-  res.json({ ok: true, state, mode });
+  res.json({ ok: true });
 });
 
-// ===== САЙТ =====
+// ===== FRONT =====
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Сейчас Ваня</title>
+<title>Liquid</title>
 
 <style>
 body{
   margin:0;
-  height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-family: Arial;
   overflow:hidden;
-
-  background: radial-gradient(circle at 30% 30%, #0b1a3a, #050816 60%, #02030a);
+  background:#020617;
+  font-family:Arial;
 }
 
-/* ===== ЖИДКАЯ МЕТАБОЛИЧЕСКАЯ ВОДА ===== */
-.water{
+canvas{
   position:absolute;
-  inset:0;
-  overflow:hidden;
-  filter: blur(50px);
+  top:0;
+  left:0;
 }
 
-/* основные “живые массы” */
-.blob{
-  position:absolute;
-  border-radius:50%;
-  mix-blend-mode: screen;
-  opacity:0.7;
-  animation: morph 18s infinite ease-in-out;
-}
-
-/* фиолетовая глубина */
-.b1{
-  width:600px;
-  height:600px;
-  background: radial-gradient(circle at 30% 30%, rgba(124,58,237,0.9), transparent 65%);
-  top:-10%;
-  left:-10%;
-}
-
-/* синяя вода */
-.b2{
-  width:700px;
-  height:700px;
-  background: radial-gradient(circle at 30% 30%, rgba(59,130,246,0.7), transparent 65%);
-  bottom:-20%;
-  right:-15%;
-  animation-delay:-5s;
-}
-
-/* светлые переливы */
-.b3{
-  width:500px;
-  height:500px;
-  background: radial-gradient(circle at 30% 30%, rgba(147,197,253,0.5), transparent 70%);
-  top:35%;
-  left:40%;
-  animation-delay:-10s;
-}
-
-/* блик */
-.glow{
-  position:absolute;
-  width:300px;
-  height:300px;
-  border-radius:50%;
-  background: radial-gradient(circle, rgba(255,255,255,0.25), transparent 70%);
-  mix-blend-mode: screen;
-  animation: morph 14s infinite ease-in-out;
-}
-
-/* ===== ПЕРЕТЕКАНИЕ ФОРМ ===== */
-@keyframes morph{
-  0%{
-    transform:translate(0,0) scale(1);
-    border-radius:40% 60% 55% 45% / 50% 40% 60% 50%;
-  }
-  25%{
-    transform:translate(120px,-90px) scale(1.2);
-    border-radius:60% 40% 30% 70% / 40% 60% 40% 60%;
-  }
-  50%{
-    transform:translate(-110px,120px) scale(0.95);
-    border-radius:30% 70% 65% 35% / 60% 40% 60% 40%;
-  }
-  75%{
-    transform:translate(90px,70px) scale(1.1);
-    border-radius:55% 45% 35% 65% / 50% 70% 30% 50%;
-  }
-  100%{
-    transform:translate(0,0) scale(1);
-    border-radius:40% 60% 55% 45% / 50% 40% 60% 50%;
-  }
-}
-
-/* ===== СТЕКЛО ===== */
+/* 💎 стекло */
 h1{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  color:white;
   font-size:48px;
-  color:#e5e7eb;
   padding:30px 50px;
-  border-radius:25px;
+  border-radius:30px;
 
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(30px);
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(40px);
 
-  border:1px solid rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.1);
 
   box-shadow:
-    inset 0 0 60px rgba(124,58,237,0.12),
-    inset 0 0 80px rgba(59,130,246,0.08),
-    0 10px 50px rgba(0,0,0,0.6);
+    inset 0 0 60px rgba(124,58,237,0.15),
+    0 20px 60px rgba(0,0,0,0.7);
 }
 
 span{
   font-family:cursive;
   color:#c4b5fd;
-  text-shadow:0 0 15px rgba(124,58,237,0.6);
 }
 
-/* админ */
 #adminBtn{
   position:fixed;
   top:10px;
   left:10px;
-  width:42px;
-  height:42px;
-  background:rgba(255,255,255,0.08);
+  width:40px;
+  height:40px;
+  background:rgba(255,255,255,0.1);
   border-radius:10px;
   cursor:pointer;
-  backdrop-filter: blur(12px);
-  border:1px solid rgba(255,255,255,0.15);
 }
 </style>
 </head>
 
 <body>
 
-<div class="water">
-  <div class="blob b1"></div>
-  <div class="blob b2"></div>
-  <div class="blob b3"></div>
-  <div class="glow"></div>
-</div>
-
+<canvas id="c"></canvas>
 <div id="adminBtn"></div>
-
 <h1>сейчас Ваня <span id="text">...</span></h1>
 
 <script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+function resize(){
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+resize();
+onresize = resize;
+
+// 🔥 метаболлы
+let blobs = Array.from({length:7}, () => ({
+  x: Math.random()*canvas.width,
+  y: Math.random()*canvas.height,
+  r: 150 + Math.random()*200,
+  dx: (Math.random()-0.5)*1.2,
+  dy: (Math.random()-0.5)*1.2
+}));
+
+function draw(){
+  const w = canvas.width;
+  const h = canvas.height;
+
+  const image = ctx.createImageData(w, h);
+  const data = image.data;
+
+  for(let y=0;y<h;y+=2){
+    for(let x=0;x<w;x+=2){
+
+      let sum = 0;
+
+      blobs.forEach(b=>{
+        const dx = x - b.x;
+        const dy = y - b.y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        sum += b.r / d;
+      });
+
+      const i = (y*w + x) * 4;
+
+      if(sum > 1){
+        data[i] = 124;
+        data[i+1] = 58;
+        data[i+2] = 237;
+        data[i+3] = 180;
+      }
+    }
+  }
+
+  ctx.putImageData(image,0,0);
+
+  blobs.forEach(b=>{
+    b.x += b.dx;
+    b.y += b.dy;
+
+    if(b.x<0||b.x>w) b.dx*=-1;
+    if(b.y<0||b.y>h) b.dy*=-1;
+  });
+
+  requestAnimationFrame(draw);
+}
+
+draw();
+
+// данные
 async function load(){
   const r = await fetch("/state");
   const d = await r.json();
   document.getElementById("text").textContent = d.text;
 }
 load();
-setInterval(load, 2000);
+setInterval(load,2000);
 
 // админка
-document.getElementById("adminBtn").onclick = async () => {
+adminBtn.onclick = async ()=>{
   const pass = prompt("пароль");
   if(pass !== "4724") return;
 
   const text = prompt("текст");
-  const sec = prompt("время (сек)");
+  const sec = prompt("секунды");
 
-  await fetch("/update", {
+  await fetch("/update",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ text, seconds: sec })
+    body:JSON.stringify({text, seconds:sec})
   });
 
   load();
@@ -276,8 +241,5 @@ document.getElementById("adminBtn").onclick = async () => {
   `);
 });
 
-// ===== СЕРВЕР =====
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("FINAL WATER SYSTEM RUNNING");
-});
+app.listen(PORT, () => console.log("LIQUID SYSTEM RUNNING"));
