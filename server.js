@@ -86,8 +86,8 @@ body{
   overflow:hidden;
   font-family:Arial;
 
-  /* 💙 СВЕТЛЫЙ ФОН */
-  background: radial-gradient(circle at 30% 30%, #dbeafe, #c7d2fe 60%, #a5b4fc);
+  /* 🌌 ТОТ САМЫЙ ТЁМНЫЙ ФОН */
+  background: radial-gradient(circle at 30% 20%, #1e1b4b, #0b1020 60%, #050816);
 }
 
 canvas{
@@ -96,75 +96,41 @@ canvas{
   left:0;
 }
 
-/* стекло */
+/* 💎 стекло (остаётся мягким) */
 h1{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  color:#1e1b4b;
+  color:#e0e7ff;
   font-size:48px;
   padding:30px 50px;
   border-radius:25px;
 
-  background: rgba(255,255,255,0.5);
-  backdrop-filter: blur(25px);
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(30px);
 
-  border:1px solid rgba(255,255,255,0.6);
+  border:1px solid rgba(255,255,255,0.08);
 
   box-shadow:
-    inset 0 0 40px rgba(255,255,255,0.5),
-    0 10px 30px rgba(0,0,0,0.2);
+    inset 0 0 60px rgba(124,58,237,0.15),
+    0 20px 60px rgba(0,0,0,0.7);
 }
 
 span{
   font-family:cursive;
-  color:#7c3aed;
+  color:#a78bfa;
 }
 
-/* админ кнопка */
+/* админ */
 #adminBtn{
   position:fixed;
   top:10px;
   left:10px;
   width:40px;
   height:40px;
-  background:rgba(0,0,0,0.1);
+  background:rgba(255,255,255,0.08);
   border-radius:10px;
-  cursor:pointer;
-}
-
-/* 🧩 большая админка */
-#panel{
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  background:rgba(255,255,255,0.8);
-  backdrop-filter: blur(30px);
-  padding:25px;
-  border-radius:20px;
-  display:none;
-  width:300px;
-  color:#1e1b4b;
-
-  box-shadow:0 20px 60px rgba(0,0,0,0.2);
-}
-
-#panel input{
-  width:100%;
-  margin-bottom:15px;
-  padding:10px;
-  border-radius:10px;
-  border:1px solid #ccc;
-}
-
-#panel button{
-  width:100%;
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  margin-bottom:10px;
   cursor:pointer;
 }
 </style>
@@ -173,15 +139,7 @@ span{
 <body>
 
 <canvas id="c"></canvas>
-
 <div id="adminBtn"></div>
-
-<div id="panel">
-  <input id="textInput" placeholder="Введите текст">
-  <input id="timeInput" placeholder="Время (сек)">
-  <button onclick="save()">OK</button>
-  <button onclick="closePanel()">Отмена</button>
-</div>
 
 <h1>сейчас Ваня <span id="text">...</span></h1>
 
@@ -196,13 +154,13 @@ function resize(){
 resize();
 onresize = resize;
 
-// 🌊 жидкость
-let blobs = Array.from({length:7}, () => ({
-  x: Math.random()*canvas.width,
-  y: Math.random()*canvas.height,
-  vx:(Math.random()-0.5)*0.5,
-  vy:(Math.random()-0.5)*0.5,
-  r:150 + Math.random()*150
+// 🌊 КРУПНЫЕ “ЖИДКИЕ” ЧАСТИЦЫ
+let blobs = Array.from({length:6}, () => ({
+  x: Math.random()*innerWidth,
+  y: Math.random()*innerHeight,
+  vx:(Math.random()-0.5)*0.4,
+  vy:(Math.random()-0.5)*0.4,
+  r:220 + Math.random()*180   // 👈 крупнее и мягче
 }));
 
 let pointer = {x:null,y:null};
@@ -212,30 +170,32 @@ function animate(){
 
   blobs.forEach(b=>{
 
-    // самостоятельное движение
-    b.vx += (Math.random()-0.5)*0.02;
-    b.vy += (Math.random()-0.5)*0.02;
+    // самодвижение (плавное течение)
+    b.vx += (Math.random()-0.5)*0.015;
+    b.vy += (Math.random()-0.5)*0.015;
 
-    // касание усиливает
+    // реакция на касание
     if(pointer.x !== null){
       const dx = pointer.x - b.x;
       const dy = pointer.y - b.y;
       const dist = Math.sqrt(dx*dx + dy*dy);
 
-      if(dist < 300){
-        b.vx += dx * 0.0008;
-        b.vy += dy * 0.0008;
+      if(dist < 350){
+        b.vx += dx * 0.0007;
+        b.vy += dy * 0.0007;
       }
     }
 
-    b.vx *= 0.98;
-    b.vy *= 0.98;
+    b.vx *= 0.985;
+    b.vy *= 0.985;
 
     b.x += b.vx;
     b.y += b.vy;
 
+    // 🌌 глубокий glow как “жидкость”
     const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
-    g.addColorStop(0,"rgba(124,58,237,0.5)");
+    g.addColorStop(0,"rgba(99,102,241,0.35)");
+    g.addColorStop(0.4,"rgba(124,58,237,0.25)");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle = g;
@@ -269,20 +229,13 @@ async function load(){
 load();
 setInterval(load,2000);
 
-// админка
-adminBtn.onclick = ()=>{
+// админка (как раньше)
+adminBtn.onclick = async ()=>{
   const pass = prompt("пароль");
   if(pass !== "4724") return;
-  panel.style.display = "block";
-};
 
-function closePanel(){
-  panel.style.display = "none";
-}
-
-async function save(){
-  const text = textInput.value;
-  const sec = timeInput.value;
+  const text = prompt("введи текст");
+  const sec = prompt("время в секундах");
 
   await fetch("/update",{
     method:"POST",
@@ -290,9 +243,8 @@ async function save(){
     body:JSON.stringify({text, seconds:sec})
   });
 
-  closePanel();
   load();
-}
+};
 </script>
 
 </body>
