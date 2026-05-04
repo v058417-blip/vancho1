@@ -84,8 +84,10 @@ app.get("/", (req, res) => {
 body{
   margin:0;
   overflow:hidden;
-  background:#020617;
   font-family:Arial;
+
+  /* 💙 СВЕТЛЫЙ ФОН */
+  background: radial-gradient(circle at 30% 30%, #dbeafe, #c7d2fe 60%, #a5b4fc);
 }
 
 canvas{
@@ -100,54 +102,70 @@ h1{
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  color:white;
+  color:#1e1b4b;
   font-size:48px;
   padding:30px 50px;
   border-radius:25px;
 
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(30px);
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(25px);
 
-  border:1px solid rgba(255,255,255,0.1);
+  border:1px solid rgba(255,255,255,0.6);
 
   box-shadow:
-    inset 0 0 40px rgba(255,255,255,0.1),
-    0 10px 40px rgba(0,0,0,0.6);
+    inset 0 0 40px rgba(255,255,255,0.5),
+    0 10px 30px rgba(0,0,0,0.2);
 }
 
 span{
   font-family:cursive;
-  color:#c4b5fd;
+  color:#7c3aed;
 }
 
-/* админ */
+/* админ кнопка */
 #adminBtn{
   position:fixed;
   top:10px;
   left:10px;
   width:40px;
   height:40px;
-  background:rgba(255,255,255,0.1);
+  background:rgba(0,0,0,0.1);
   border-radius:10px;
   cursor:pointer;
 }
 
+/* 🧩 большая админка */
 #panel{
   position:fixed;
-  top:60px;
-  left:10px;
-  background:rgba(0,0,0,0.6);
-  backdrop-filter: blur(20px);
-  padding:15px;
-  border-radius:15px;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:rgba(255,255,255,0.8);
+  backdrop-filter: blur(30px);
+  padding:25px;
+  border-radius:20px;
   display:none;
-  color:white;
-  width:200px;
+  width:300px;
+  color:#1e1b4b;
+
+  box-shadow:0 20px 60px rgba(0,0,0,0.2);
 }
 
 #panel input{
   width:100%;
+  margin-bottom:15px;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #ccc;
+}
+
+#panel button{
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:10px;
   margin-bottom:10px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -159,8 +177,8 @@ span{
 <div id="adminBtn"></div>
 
 <div id="panel">
-  <input id="textInput" placeholder="текст">
-  <input id="timeInput" placeholder="секунды">
+  <input id="textInput" placeholder="Введите текст">
+  <input id="timeInput" placeholder="Время (сек)">
   <button onclick="save()">OK</button>
   <button onclick="closePanel()">Отмена</button>
 </div>
@@ -178,12 +196,12 @@ function resize(){
 resize();
 onresize = resize;
 
-// 🌊 жидкость (частицы)
-let blobs = Array.from({length:8}, () => ({
+// 🌊 жидкость
+let blobs = Array.from({length:7}, () => ({
   x: Math.random()*canvas.width,
   y: Math.random()*canvas.height,
-  vx:0,
-  vy:0,
+  vx:(Math.random()-0.5)*0.5,
+  vy:(Math.random()-0.5)*0.5,
   r:150 + Math.random()*150
 }));
 
@@ -194,19 +212,22 @@ function animate(){
 
   blobs.forEach(b=>{
 
-    // притяжение к пальцу
+    // самостоятельное движение
+    b.vx += (Math.random()-0.5)*0.02;
+    b.vy += (Math.random()-0.5)*0.02;
+
+    // касание усиливает
     if(pointer.x !== null){
       const dx = pointer.x - b.x;
       const dy = pointer.y - b.y;
       const dist = Math.sqrt(dx*dx + dy*dy);
 
       if(dist < 300){
-        b.vx += dx * 0.0005;
-        b.vy += dy * 0.0005;
+        b.vx += dx * 0.0008;
+        b.vy += dy * 0.0008;
       }
     }
 
-    // трение
     b.vx *= 0.98;
     b.vy *= 0.98;
 
@@ -214,7 +235,7 @@ function animate(){
     b.y += b.vy;
 
     const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
-    g.addColorStop(0,"rgba(124,58,237,0.7)");
+    g.addColorStop(0,"rgba(124,58,237,0.5)");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle = g;
@@ -237,10 +258,6 @@ window.addEventListener("touchmove",e=>{
   const t = e.touches[0];
   pointer.x = t.clientX;
   pointer.y = t.clientY;
-});
-
-window.addEventListener("mouseleave",()=>{
-  pointer.x = null;
 });
 
 // текст
@@ -284,4 +301,4 @@ async function save(){
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("LIQUID TOUCH RUNNING"));
+app.listen(PORT, () => console.log("RUNNING"));
