@@ -1,4 +1,4 @@
-  const express = require("express");
+const express = require("express");
 const fs = require("fs");
 const path = require("path");
 
@@ -39,7 +39,7 @@ function updateState() {
   if (state.mode === "auto" && now > state.nextChange) {
     state.index = 1 - state.index;
     state.text = variants[state.index];
-    state.nextChange = now + 60000 + Math.random() * 200000;
+    state.nextChange = now + (60000 + Math.random() * 180000);
   }
 
   saveState(state);
@@ -74,61 +74,64 @@ app.get("/", (req, res) => {
 
 <style>
 html, body {
-  margin:0;
-  padding:0;
-  overflow:hidden;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
 }
 
-/* 🌌 ФИКСИРОВАННЫЙ ТЁМНЫЙ ФОН (КАК ТЕБЕ НРАВИЛСЯ) */
-body{
-  font-family:Arial;
-
-  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816) !important;
+/* 🌌 СТАБИЛЬНЫЙ “ТЕМНЫЙ ЛЮКС” ФОН */
+body {
+  font-family: Arial;
+  background:
+    radial-gradient(circle at 25% 30%, rgba(99,102,241,0.25), transparent 45%),
+    radial-gradient(circle at 75% 60%, rgba(139,92,246,0.20), transparent 50%),
+    linear-gradient(180deg, #050816 0%, #0a0f2c 50%, #050816 100%);
 }
 
-/* canvas поверх */
-canvas{
-  position:fixed;
-  top:0;
-  left:0;
+/* canvas */
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
-/* 💎 стекло */
-h1{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  color:#e0e7ff;
-  font-size:48px;
-  padding:30px 50px;
-  border-radius:25px;
+/* текст */
+h1 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #e0e7ff;
+  font-size: 48px;
+  padding: 30px 50px;
+  border-radius: 25px;
 
   background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(30px);
+  backdrop-filter: blur(25px);
 
-  border:1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.08);
 
   box-shadow:
-    inset 0 0 60px rgba(124,58,237,0.15),
+    inset 0 0 50px rgba(124,58,237,0.15),
     0 20px 60px rgba(0,0,0,0.7);
 }
 
-span{
-  font-family:cursive;
-  color:#a78bfa;
+span {
+  font-family: cursive;
+  color: #a78bfa;
 }
 
 /* админ */
-#adminBtn{
-  position:fixed;
-  top:10px;
-  left:10px;
-  width:40px;
-  height:40px;
-  background:rgba(255,255,255,0.08);
-  border-radius:10px;
-  cursor:pointer;
+#adminBtn {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  cursor: pointer;
 }
 </style>
 </head>
@@ -151,7 +154,7 @@ function resize(){
 resize();
 onresize = resize;
 
-/* 🌊 ЖИДКОСТЬ (мягкая, крупная, как раньше нравилась) */
+/* 🌊 мягкие большие формы */
 let blobs = Array.from({length:6}, () => ({
   x: Math.random()*innerWidth,
   y: Math.random()*innerHeight,
@@ -165,10 +168,10 @@ let pointer = {x:null,y:null};
 function animate(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  blobs.forEach(b=>{
+  blobs.forEach(b => {
 
-    b.vx += (Math.random()-0.5)*0.015;
-    b.vy += (Math.random()-0.5)*0.015;
+    b.vx += (Math.random()-0.5)*0.01;
+    b.vy += (Math.random()-0.5)*0.01;
 
     if(pointer.x !== null){
       const dx = pointer.x - b.x;
@@ -176,8 +179,8 @@ function animate(){
       const dist = Math.sqrt(dx*dx + dy*dy);
 
       if(dist < 350){
-        b.vx += dx * 0.0007;
-        b.vy += dy * 0.0007;
+        b.vx += dx * 0.0006;
+        b.vy += dy * 0.0006;
       }
     }
 
@@ -188,8 +191,8 @@ function animate(){
     b.y += b.vy;
 
     const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
-    g.addColorStop(0,"rgba(99,102,241,0.30)");
-    g.addColorStop(0.5,"rgba(124,58,237,0.20)");
+    g.addColorStop(0,"rgba(99,102,241,0.28)");
+    g.addColorStop(0.5,"rgba(124,58,237,0.18)");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle = g;
@@ -202,7 +205,7 @@ function animate(){
 }
 animate();
 
-/* pointer */
+/* управление */
 window.addEventListener("mousemove",e=>{
   pointer.x = e.clientX;
   pointer.y = e.clientY;
