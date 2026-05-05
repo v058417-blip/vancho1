@@ -100,13 +100,13 @@ canvas{
   inset:0;
 }
 
-/* 🔧 ТАБЛИЧКА: чуть шире, но с воздухом */
+/* 🔧 табличка чуть шире + воздух */
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
   border-radius:28px;
 
-  padding:34px 170px; /* было 130 → шире, но не впритык */
+  padding:34px 210px; /* чуть шире, но не впритык */
 
   border:1px solid rgba(255,255,255,0.10);
 }
@@ -118,7 +118,9 @@ h1{
   transform:translate(-50%,-50%);
   color:#e0e7ff;
   font-size:69px;
-  text-align:center;
+
+  text-align:left; /* 👈 теперь текст слева */
+  width:90%;
 }
 
 span{ color:#a78bfa; }
@@ -245,14 +247,16 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 🌊 ГРАДИЕНТ: сильнее растворение в фон */
+    /* 🌊 СИЛЬНЕЕ РАСТВОРЕНИЕ В ФОН */
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
     g.addColorStop(0,"rgba(255,255,255,0.35)");
-    g.addColorStop(0.25,"rgba(190,150,255,0.22)");
-    g.addColorStop(0.5,"rgba(140,100,230,0.14)");
-    g.addColorStop(0.75,"rgba(80,60,140,0.08)");
-    g.addColorStop(1,"rgba(11,16,32,0)");
+    g.addColorStop(0.12,"rgba(255,255,255,0.22)");
+    g.addColorStop(0.28,"rgba(190,150,255,0.22)");
+    g.addColorStop(0.45,"rgba(160,120,255,0.16)");
+    g.addColorStop(0.65,"rgba(110,80,200,0.10)");
+    g.addColorStop(0.8,"rgba(60,45,120,0.06)");
+    g.addColorStop(1,"rgba(5,8,22,0)");
 
     ctx.fillStyle = g;
 
