@@ -100,13 +100,13 @@ canvas{
   inset:0;
 }
 
-/* ✔ уменьшено расстояние в 2 раза */
+/* 🔧 только отступ изменён */
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
   border-radius:28px;
 
-  width: calc(100% - 60px);
+  width: calc(100% - 100px);
 
   padding:34px 90px;
 
@@ -249,10 +249,10 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    // 🌊 ОБНОВЛЁННЫЙ ГРАДИЕНТ (как ты просила)
+    // ✨ центр стал светлее (как ты просила)
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.24)");
+    g.addColorStop(0,"rgba(255,255,255,0.38)");
     g.addColorStop(0.35,"rgba(167,139,250,0.20)");
     g.addColorStop(0.65,"rgba(99,102,241,0.10)");
     g.addColorStop(1,"rgba(5,8,22,0)");
