@@ -118,10 +118,10 @@ h1{
 
 span{
   color:#a78bfa;
-  text-shadow: 0 0 16px rgba(167,139,250,0.45);
+  text-shadow: 0 0 14px rgba(167,139,250,0.5);
 }
 
-/* 💜 админка (стабильная) */
+/* 💜 админка */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -131,6 +131,7 @@ span{
   display:flex;
   align-items:center;
   justify-content:center;
+
   font-size:22px;
   cursor:pointer;
 
@@ -140,7 +141,7 @@ span{
   border:1px solid rgba(255,255,255,0.12);
 
   color:#c4b5fd;
-  text-shadow: 0 0 14px rgba(196,181,253,0.7);
+  text-shadow: 0 0 18px rgba(196,181,253,0.8);
 }
 </style>
 </head>
@@ -163,31 +164,20 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
-/* 🌊 СТАБИЛЬНАЯ ВЕРСИЯ ВОДЫ (ВОЗВРАТ) */
+/* 🌊 СТАБИЛЬНАЯ ВОДА (БЕЗ СЛИПАНИЙ И ПОЛОМКИ) */
 
 let blobs = [];
 
-/* крупные */
-for(let i=0;i<3;i++){
+/* просто крупные мягкие пятна */
+for(let i=0;i<6;i++){
   blobs.push({
     x: Math.random()*innerWidth,
     y: Math.random()*innerHeight,
-    vx: 0,
-    vy: 0,
-    r: 520 + Math.random()*400
+    vx: (Math.random()-0.5)*0.6,
+    vy: (Math.random()-0.5)*0.6,
+    r: 300 + Math.random()*400
   });
 }
-
-/* средние */
-for(let i=0;i<2;i++){
-  blobs.push({
-    x: Math.random()*innerWidth,
-    y: Math.random()*innerHeight,
-    vx: 0,
-    vy: 0,
-    r: 240 + Math.random()*180
-  });
-});
 
 let p = {x: innerWidth/2, y: innerHeight/2};
 
@@ -202,68 +192,52 @@ addEventListener("touchmove", e=>{
   p.y = t.clientY;
 });
 
-function flow(x,y,t){
-  return Math.sin(x*0.0013 + t) * Math.cos(y*0.0013 - t);
-}
-
 function draw(){
   ctx.clearRect(0,0,c.width,c.height);
   ctx.globalCompositeOperation = "lighter";
 
-  let t = Date.now()*0.001;
-
   for(let b of blobs){
 
-    /* 🌊 плавное движение (НЕ ЛОМАЕТСЯ) */
-    b.vx += flow(b.x,b.y,t)*0.22;
-    b.vy += flow(b.y,b.x,t)*0.22;
+    /* мягкое автономное движение */
+    b.x += b.vx;
+    b.y += b.vy;
 
-    /* 👆 палец */
+    /* лёгкое “дрожание жизни” */
+    b.vx += (Math.random()-0.5)*0.03;
+    b.vy += (Math.random()-0.5)*0.03;
+
+    /* реакция на палец */
     let dx = p.x - b.x;
     let dy = p.y - b.y;
     let d = Math.sqrt(dx*dx + dy*dy);
 
-    if(d < 900){
-      let f = (1 - d/900)*0.002;
-      b.vx += dx*f;
-      b.vy += dy*f;
+    if(d < 800){
+      let f = (1 - d/800)*0.003;
+      b.vx += dx * f;
+      b.vy += dy * f;
     }
 
-    /* мягкий шум */
-    b.vx += (Math.random()-0.5)*0.05;
-    b.vy += (Math.random()-0.5)*0.05;
+    /* затухание */
+    b.vx *= 0.96;
+    b.vy *= 0.96;
 
-    b.vx *= 0.97;
-    b.vy *= 0.97;
+    /* wrap */
+    if(b.x < 0) b.x = innerWidth;
+    if(b.x > innerWidth) b.x = 0;
+    if(b.y < 0) b.y = innerHeight;
+    if(b.y > innerHeight) b.y = 0;
 
-    b.x += b.vx;
-    b.y += b.vy;
-
-    if(b.x<0)b.x=innerWidth;
-    if(b.x>innerWidth)b.x=0;
-    if(b.y<0)b.y=innerHeight;
-    if(b.y>innerHeight)b.y=0;
-
-    /* 💧 мягкая вода (без резких краёв) */
+    /* 💧 мягкая вода */
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.28)");
-    g.addColorStop(0.4,"rgba(167,139,250,0.20)");
+    g.addColorStop(0,"rgba(255,255,255,0.25)");
+    g.addColorStop(0.4,"rgba(167,139,250,0.18)");
     g.addColorStop(1,"rgba(0,0,0,0)");
 
     ctx.fillStyle = g;
 
     ctx.beginPath();
-    ctx.ellipse(
-      b.x,
-      b.y,
-      b.r,
-      b.r*0.72,
-      0,
-      0,
-      Math.PI*2
-    );
-
+    ctx.ellipse(b.x,b.y,b.r,b.r*0.7,0,0,Math.PI*2);
     ctx.fill();
   }
 
