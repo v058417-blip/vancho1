@@ -9,7 +9,6 @@ const FILE = path.join(__dirname, "state.json");
 
 const variants = ["натурал", "гомосек"];
 
-// случайный интервал
 function randomInterval() {
   return 60000 + Math.random() * (3 * 24 * 60 * 60 * 1000);
 }
@@ -37,11 +36,9 @@ function saveState(s) {
 
 let state = loadState();
 
-// ✅ исправленная логика
 function updateState() {
   const now = Date.now();
 
-  // manual режим
   if (state.mode === "manual") {
     if (now >= state.until) {
       state.mode = "auto";
@@ -54,7 +51,6 @@ function updateState() {
     }
   }
 
-  // авто режим
   if (state.mode === "auto" && now >= state.nextChange) {
     state.index = state.index === 0 ? 1 : 0;
     state.text = variants[state.index];
@@ -64,7 +60,6 @@ function updateState() {
   saveState(state);
 }
 
-// 🔥 теперь проверка каждую секунду
 setInterval(updateState, 1000);
 
 // API
@@ -92,14 +87,23 @@ app.get("/", (req, res) => {
 <html>
 <head>
 <meta charset="UTF-8">
+
 <style>
-body{
+html, body {
   margin:0;
+  padding:0;
+  height:100%;
   overflow:hidden;
-  font-family:Arial;
-  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
 }
 
+/* 🌌 ТОТ САМЫЙ ТЁМНЫЙ ФОН */
+body{
+  font-family:Arial;
+  background:
+    radial-gradient(circle at 30% 20%, #1e1b4b, #0b1020 60%, #050816);
+}
+
+/* 💎 СТЕКЛО */
 h1{
   position:absolute;
   top:50%;
@@ -107,21 +111,37 @@ h1{
   transform:translate(-50%,-50%);
   color:#e0e7ff;
   font-size:48px;
+  padding:30px 50px;
+  border-radius:25px;
+
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(30px);
+
+  border:1px solid rgba(255,255,255,0.08);
+
+  box-shadow:
+    inset 0 0 60px rgba(124,58,237,0.15),
+    0 20px 60px rgba(0,0,0,0.7);
 }
 
 span{
+  font-family:cursive;
   color:#a78bfa;
 }
 
+/* админ кнопка */
 #adminBtn{
   position:fixed;
   top:10px;
   left:10px;
   width:40px;
   height:40px;
-  background:rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.08);
+  border-radius:10px;
+  cursor:pointer;
 }
 </style>
+
 </head>
 
 <body>
@@ -138,25 +158,22 @@ async function load(){
 load();
 setInterval(load,1000);
 
-// ✅ новая админка (как ты хотела)
+// админка
 adminBtn.onclick = async ()=>{
   const pass = prompt("пароль");
   if(pass !== "4724") return;
 
   const text = prompt("текст");
 
-  // сначала выбор единицы
-  const unitChoice = prompt("выбери:\n1 - секунды\n2 - минуты\n3 - часы");
+  const unit = prompt("1-сек 2-мин 3-час");
 
-  let multiplier = 1000;
+  let mult = 1000;
+  if(unit === "2") mult = 60000;
+  if(unit === "3") mult = 3600000;
 
-  if(unitChoice === "1") multiplier = 1000;
-  if(unitChoice === "2") multiplier = 60 * 1000;
-  if(unitChoice === "3") multiplier = 60 * 60 * 1000;
+  const value = prompt("число");
 
-  const value = prompt("введи число");
-
-  const ms = Number(value) * multiplier;
+  const ms = Number(value) * mult;
 
   await fetch("/update",{
     method:"POST",
