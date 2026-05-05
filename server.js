@@ -6,6 +6,7 @@ const app = express();
 app.use(express.json());
 
 const FILE = path.join(__dirname, "state.json");
+
 const variants = ["натурал", "гомосек"];
 
 function randomInterval() {
@@ -58,19 +59,23 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
-app.get("/state", (req,res)=>res.json(state));
-
-app.post("/update",(req,res)=>{
-  const {text,ms}=req.body;
-  state.mode="manual";
-  state.text=text;
-  state.until=Date.now()+ms;
-  saveState(state);
-  res.json({ok:true});
+app.get("/state", (req, res) => {
+  res.json(state);
 });
 
-app.get("/", (req,res)=>{
-res.send(`
+app.post("/update", (req, res) => {
+  const { text, ms } = req.body;
+
+  state.mode = "manual";
+  state.text = text;
+  state.until = Date.now() + ms;
+
+  saveState(state);
+  res.json({ ok: true });
+});
+
+app.get("/", (req, res) => {
+  res.send(`
 <!DOCTYPE html>
 <html>
 <head>
@@ -94,7 +99,6 @@ canvas{
   left:0;
 }
 
-/* стекло */
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
@@ -132,7 +136,6 @@ span{color:#a78bfa;}
   border:1px solid rgba(255,255,255,0.12);
   color:white;
 }
-
 </style>
 </head>
 
@@ -154,16 +157,16 @@ function resize(){
 resize();
 onresize=resize;
 
-/* 🌊 МЕТАБОЛЛЫ (исправленные) */
+/* 🌊 СТАБИЛЬНАЯ ЖИДКОСТЬ (без слипания) */
 let blobs=[];
 
-// большие
+// большие массы
 for(let i=0;i<5;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
     vx:0,vy:0,
-    r:360+Math.random()*220
+    r:340+Math.random()*260
   });
 }
 
@@ -177,14 +180,14 @@ for(let i=0;i<6;i++){
   });
 }
 
-// мелкие (ПОЛУПРОЗРАЧНЫЕ)
+// мелкие (почти прозрачные)
 for(let i=0;i<10;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
-    vx:(Math.random()-0.5)*1.2,
-    vy:(Math.random()-0.5)*1.2,
-    r:20+Math.random()*40
+    vx:(Math.random()-0.5)*0.6,
+    vy:(Math.random()-0.5)*0.6,
+    r:25+Math.random()*45
   });
 });
 
@@ -202,46 +205,40 @@ addEventListener("touchmove",e=>{
 });
 
 function draw(){
-
   ctx.clearRect(0,0,c.width,c.height);
   ctx.globalCompositeOperation="lighter";
 
   for(let b of blobs){
 
-    // лёгкое хаотичное движение
-    b.vx += (Math.random()-0.5)*0.02;
-    b.vy += (Math.random()-0.5)*0.02;
+    // лёгкое движение
+    b.vx += (Math.random()-0.5)*0.01;
+    b.vy += (Math.random()-0.5)*0.01;
 
-    // тянется за пальцем (мягко)
+    // палец тянет
     let dx=p.x-b.x;
     let dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
 
-    if(d<800){
-      let f=(1-d/800)*0.02;
+    if(d<900){
+      let f=(1-d/900)*0.018;
       b.vx+=dx*f;
       b.vy+=dy*f;
     }
 
-    b.vx*=0.92;
-    b.vy*=0.92;
+    b.vx*=0.94;
+    b.vy*=0.94;
 
     b.x+=b.vx;
     b.y+=b.vy;
 
-    /* 💥 МЕТАБОЛЛ СИЯНИЕ */
-    let gradient=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    /* 💧 МЯГКОЕ СВЕЧЕНИЕ (метаболл эффект без слипания) */
+    let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    // центр — яркий
-    gradient.addColorStop(0,"rgba(167,139,250,0.55)");
+    g.addColorStop(0,"rgba(167,139,250,0.5)");
+    g.addColorStop(0.35,"rgba(139,92,246,0.18)");
+    g.addColorStop(1,"rgba(0,0,0,0)");
 
-    // средина — мягкое свечение (ВАЖНО)
-    gradient.addColorStop(0.3,"rgba(139,92,246,0.25)");
-
-    // почти прозрачный край
-    gradient.addColorStop(1,"rgba(0,0,0,0)");
-
-    ctx.fillStyle=gradient;
+    ctx.fillStyle=g;
 
     ctx.beginPath();
     ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
@@ -287,7 +284,7 @@ adminBtn.onclick=async()=>{
 
 </body>
 </html>
-`);
+  `);
 });
 
 app.listen(3000,()=>console.log("RUNNING"));
