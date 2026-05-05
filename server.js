@@ -86,7 +86,7 @@ app.get("/", (req, res) => {
 <meta charset="UTF-8">
 
 <style>
-html, body{
+html,body{
   margin:0;
   padding:0;
   overflow:hidden;
@@ -94,7 +94,7 @@ html, body{
   font-family:Arial;
 }
 
-/* 🌌 стабильный фон */
+/* 🌌 фон как у тебя */
 body{
   background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
 }
@@ -107,7 +107,7 @@ canvas{
   z-index:0;
 }
 
-/* 💎 стекло (УВЕЛИЧЕНО как ты хотела) */
+/* 💎 стекло (увеличенное) */
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
@@ -132,6 +132,10 @@ h1{
   color:#e0e7ff;
   font-size:44px;
   z-index:2;
+
+  text-shadow:
+    0 0 12px rgba(167,139,250,0.35),
+    0 0 30px rgba(139,92,246,0.2);
 }
 
 span{
@@ -186,26 +190,28 @@ function resize(){
 resize();
 onresize = resize;
 
-/* 🌊 ЖИДКОСТЬ (metaballs + вязкость) */
+/* 🌊 ЖИДКОСТЬ (исправленная — НЕ убегает, а тянется) */
 let blobs = Array.from({length:9}, () => ({
   x: Math.random()*innerWidth,
   y: Math.random()*innerHeight,
-  vx:(Math.random()-0.5)*0.4,
-  vy:(Math.random()-0.5)*0.4,
+  vx:0,
+  vy:0,
   ax:0,
   ay:0,
-  r:140 + Math.random()*130
+  r:200 + Math.random()*180   // 👈 БОЛЬШЕ РАЗМЕР
 }));
 
-let pointer = null;
+let pointer = {x: innerWidth/2, y: innerHeight/2};
 
 window.addEventListener("mousemove",e=>{
-  pointer = {x:e.clientX,y:e.clientY};
+  pointer.x = e.clientX;
+  pointer.y = e.clientY;
 });
 
 window.addEventListener("touchmove",e=>{
   const t = e.touches[0];
-  pointer = {x:t.clientX,y:t.clientY};
+  pointer.x = t.clientX;
+  pointer.y = t.clientY;
 });
 
 function draw(){
@@ -216,74 +222,67 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b = blobs[i];
 
-    // инерция
-    b.vx += b.ax;
-    b.vy += b.ay;
-
-    b.vx *= 0.92;
-    b.vy *= 0.92;
-
-    b.ax *= 0.85;
-    b.ay *= 0.85;
-
-    // самодвижение жидкости
+    // 🌊 внутреннее течение
     b.ax += Math.sin(Date.now()*0.001 + i)*0.02;
     b.ay += Math.cos(Date.now()*0.001 + i)*0.02;
 
-    // палец тянет жидкость
-    if(pointer){
-      let dx = pointer.x - b.x;
-      let dy = pointer.y - b.y;
-      let dist = Math.sqrt(dx*dx + dy*dy);
+    // 👆 ПРИТЯЖЕНИЕ к пальцу (НЕ ОТТАЛКИВАНИЕ)
+    let dx = pointer.x - b.x;
+    let dy = pointer.y - b.y;
+    let dist = Math.sqrt(dx*dx + dy*dy);
 
-      if(dist < 260){
-        let f = (1 - dist/260)*0.05;
-        b.ax += dx * f * 0.02;
-        b.ay += dy * f * 0.02;
-      }
+    if(dist < 600){
+      let force = (1 - dist/600)*0.05;
+      b.ax += dx * force * 0.02;
+      b.ay += dy * force * 0.02;
     }
 
-    // слияние жидкости
+    // 🌐 слияние массы
     for(let j=0;j<blobs.length;j++){
       if(i===j) continue;
 
       let b2 = blobs[j];
-      let dx = b2.x - b.x;
-      let dy = b2.y - b.y;
-      let dist = Math.sqrt(dx*dx + dy*dy);
+      let dx2 = b2.x - b.x;
+      let dy2 = b2.y - b.y;
+      let d2 = Math.sqrt(dx2*dx2 + dy2*dy2);
 
-      if(dist < 190){
-        let f = (1 - dist/190)*0.02;
-        b.ax += dx * f;
-        b.ay += dy * f;
+      if(d2 < 240){
+        let f = (1 - d2/240)*0.02;
+        b.ax += dx2 * f;
+        b.ay += dy2 * f;
       }
     }
+
+    // 🧈 вязкость
+    b.vx = (b.vx + b.ax) * 0.88;
+    b.vy = (b.vy + b.ay) * 0.88;
 
     b.x += b.vx;
     b.y += b.vy;
 
-    // 💧 НЕ КРУГ — ЖЕЛЕ-ФОРМА
-    let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    b.ax *= 0.6;
+    b.ay *= 0.6;
 
-    g.addColorStop(0,"rgba(139,92,246,0.55)");
-    g.addColorStop(0.5,"rgba(99,102,241,0.25)");
+    // 💧 форма жидкости
+    let wobble = Math.sin(Date.now()*0.002 + i)*0.5;
+
+    let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    g.addColorStop(0,"rgba(139,92,246,0.6)");
+    g.addColorStop(0.4,"rgba(99,102,241,0.25)");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle = g;
 
-    let wobble = Math.sin(Date.now()*0.002 + i)*0.5;
-
     ctx.beginPath();
     ctx.ellipse(
-      b.x + Math.sin(i)*10,
-      b.y + Math.cos(i)*10,
+      b.x + Math.sin(i)*12,
+      b.y + Math.cos(i)*12,
       b.r * (1 + wobble*0.15),
-      b.r * (0.7 - wobble*0.15),
+      b.r * (0.75 - wobble*0.15),
       wobble,
       0,
       Math.PI*2
     );
-
     ctx.fill();
   }
 
@@ -306,7 +305,6 @@ adminBtn.onclick = async ()=>{
   if(pass !== "4724") return;
 
   const text = prompt("текст");
-
   const type = prompt("1-сек 2-мин 3-час");
 
   let mult = 1000;
