@@ -100,13 +100,13 @@ canvas{
   inset:0;
 }
 
-/* 🔧 табличка чуть шире + воздух */
+/* 🔧 меньше "коробка", больше воздуха */
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
   border-radius:28px;
 
-  padding:34px 210px; /* чуть шире, но не впритык */
+  padding:34px 140px; /* было больше — стало легче */
 
   border:1px solid rgba(255,255,255,0.10);
 }
@@ -119,8 +119,9 @@ h1{
   color:#e0e7ff;
   font-size:69px;
 
-  text-align:left; /* 👈 теперь текст слева */
-  width:90%;
+  text-align:left;
+  width: calc(100% - 120px); /* больше воздуха по краям */
+  max-width: 1200px;
 }
 
 span{ color:#a78bfa; }
@@ -247,15 +248,12 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 🌊 СИЛЬНЕЕ РАСТВОРЕНИЕ В ФОН */
+    /* 🌊 УПРОЩЁННЫЙ ГРАДИЕНТ БЕЗ СЛОЁВ */
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.35)");
-    g.addColorStop(0.12,"rgba(255,255,255,0.22)");
-    g.addColorStop(0.28,"rgba(190,150,255,0.22)");
-    g.addColorStop(0.45,"rgba(160,120,255,0.16)");
-    g.addColorStop(0.65,"rgba(110,80,200,0.10)");
-    g.addColorStop(0.8,"rgba(60,45,120,0.06)");
+    g.addColorStop(0,"rgba(255,255,255,0.30)");
+    g.addColorStop(0.35,"rgba(167,139,250,0.22)");
+    g.addColorStop(0.7,"rgba(60,40,120,0.12)");
     g.addColorStop(1,"rgba(5,8,22,0)");
 
     ctx.fillStyle = g;
