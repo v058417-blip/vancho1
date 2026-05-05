@@ -61,8 +61,23 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
-/* ================= FRONT ================= */
+// API
+app.get("/state", (req, res) => {
+  res.json(state);
+});
 
+app.post("/update", (req, res) => {
+  const { text, ms } = req.body;
+
+  state.mode = "manual";
+  state.text = text;
+  state.until = Date.now() + ms;
+
+  saveState(state);
+  res.json({ ok: true });
+});
+
+// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -152,79 +167,79 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
-/* 🌊 СБАЛАНСИРОВАННЫЕ ЖИДКИЕ МАССЫ */
+/* 🌊 БЛОБЫ */
 let blobs = [];
 
-/* 🔥 большие (почти 1/4 экрана) */
+/* большие */
 for(let i=0;i<3;i++){
   blobs.push({
-    x: Math.random()*innerWidth,
-    y: Math.random()*innerHeight,
-    vx:0, vy:0,
-    ax:0, ay:0,
-    r: 380 + Math.random()*450
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight,
+    vx:0,vy:0,
+    ax:0,ay:0,
+    r:380 + Math.random()*420
   });
 }
 
-/* 🌫 средние */
+/* средние */
 for(let i=0;i<5;i++){
   blobs.push({
-    x: Math.random()*innerWidth,
-    y: Math.random()*innerHeight,
-    vx:0, vy:0,
-    ax:0, ay:0,
-    r: 140 + Math.random()*160
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight,
+    vx:0,vy:0,
+    ax:0,ay:0,
+    r:140 + Math.random()*160
   });
 }
 
-/* ✨ мелкие (почти прозрачные) */
+/* мелкие */
 for(let i=0;i<6;i++){
   blobs.push({
-    x: Math.random()*innerWidth,
-    y: Math.random()*innerHeight,
-    vx:0, vy:0,
-    ax:0, ay:0,
-    r: 25 + Math.random()*60
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight,
+    vx:0,vy:0,
+    ax:0,ay:0,
+    r:25 + Math.random()*60
   });
 }
 
-let pointer = {x:innerWidth/2,y:innerHeight/2};
+let p = {x:innerWidth/2,y:innerHeight/2};
 
 addEventListener("mousemove",e=>{
-  pointer.x=e.clientX;
-  pointer.y=e.clientY;
+  p.x=e.clientX;
+  p.y=e.clientY;
 });
 
 addEventListener("touchmove",e=>{
   const t=e.touches[0];
-  pointer.x=t.clientX;
-  pointer.y=t.clientY;
+  p.x=t.clientX;
+  p.y=t.clientY;
 });
 
 /* ================= WATER ================= */
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.globalCompositeOperation = "lighter";
+  ctx.globalCompositeOperation="lighter";
 
   for(let i=0;i<blobs.length;i++){
     let b = blobs[i];
 
-    let dx = pointer.x - b.x;
-    let dy = pointer.y - b.y;
+    let dx = p.x - b.x;
+    let dy = p.y - b.y;
     let dist = Math.sqrt(dx*dx + dy*dy);
 
-    /* 🌊 МЯГКОЕ притяжение */
+    /* 🌊 мягкое притяжение */
     if(dist < 950){
       let f = (1 - dist/950) * 0.006;
       b.ax += dx * f;
       b.ay += dy * f;
     }
 
-    /* 🌫 внутреннее движение */
-    b.ax += Math.sin(Date.now()*0.0008 + i) * 0.003;
-    b.ay += Math.cos(Date.now()*0.0008 + i) * 0.003;
+    /* хаотичное движение */
+    b.ax += Math.sin(Date.now()*0.001 + i) * 0.003;
+    b.ay += Math.cos(Date.now()*0.001 + i) * 0.003;
 
-    /* 🌐 взаимодействие (слияние + разлив) */
+    /* 🌐 СЛИЯНИЕ + РАЗЛИПАНИЕ (главное исправление) */
     for(let j=0;j<blobs.length;j++){
       if(i===j) continue;
 
@@ -236,33 +251,34 @@ function draw(){
       if(d2 < 520){
         let k = (1 - d2/520);
 
-        /* ✔ притяжение (эффект слияния) */
-        b.ax += dx2 * k * 0.0022;
+        /* ✨ эффект СЛИЯНИЯ (свет в центре) */
+        b.ax += dx2 * k * 0.0025;
+        b.ay += dy2 * k * 0.0025;
 
-        /* ❌ разлив (чтобы не залипали) */
-        b.ax -= dx2 * k * 0.0018;
-        b.ay -= dy2 * k * 0.0018;
+        /* ❌ разлипание (чтобы не слипались навсегда) */
+        b.ax -= dx2 * k * 0.0022;
+        b.ay -= dy2 * k * 0.0022;
       }
     }
 
-    /* 🧈 жидкость */
-    b.vx = (b.vx + b.ax) * 0.87;
-    b.vy = (b.vy + b.ay) * 0.87;
+    /* 🧈 инерция */
+    b.vx = (b.vx + b.ax) * 0.88;
+    b.vy = (b.vy + b.ay) * 0.88;
 
     b.x += b.vx;
     b.y += b.vy;
 
-    b.ax *= 0.45;
-    b.ay *= 0.45;
+    b.ax *= 0.5;
+    b.ay *= 0.5;
 
-    /* 💧 СИЯНИЕ БЕЗ КОНТУРОВ */
+    /* 💧 ЖИВОЕ СИЯНИЕ (без контуров) */
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
     let a = b.r > 300 ? 0.45 : b.r > 100 ? 0.25 : 0.12;
 
-    g.addColorStop(0,"rgba(255,255,255," + a + ")");
-    g.addColorStop(0.25,"rgba(167,139,250," + a + ")");
-    g.addColorStop(0.6,"rgba(139,92,246," + (a*0.6) + ")");
+    g.addColorStop(0,"rgba(255,255,255,"+a+")"); // 💡 центр слияния
+    g.addColorStop(0.3,"rgba(167,139,250,"+(a*0.8)+")");
+    g.addColorStop(0.7,"rgba(139,92,246,"+(a*0.5)+")");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle = g;
@@ -273,7 +289,7 @@ function draw(){
       b.y,
       b.r,
       b.r*0.75,
-      Math.sin(i + Date.now()*0.001)*0.25,
+      Math.sin(i + Date.now()*0.001)*0.2,
       0,
       Math.PI*2
     );
