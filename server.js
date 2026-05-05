@@ -106,7 +106,7 @@ canvas{
   left:50%;
   transform:translate(-50%,-50%);
 
-  width:min(78vw,1200px);
+  width:min(62vw,960px); /* уменьшено ~в 1.25 раза */
   padding:34px 90px;
 
   background: rgba(255,255,255,0.06);
@@ -205,8 +205,8 @@ function drawBlob(b,t,ox=0,oy=0){
 
   let g = ctx.createRadialGradient(x,y,0,x,y,b.r);
 
-  /* ВЕРНУЛ ЛЮБИМЫЙ ГРАДИЕНТ */
-  g.addColorStop(0,"rgba(255,255,255,0.22)");
+  /* чуть более плотный центр */
+  g.addColorStop(0,"rgba(255,255,255,0.32)");
   g.addColorStop(0.4,"rgba(167,139,250,0.18)");
   g.addColorStop(1,"rgba(0,0,0,0)");
 
