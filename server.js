@@ -40,26 +40,25 @@ function updateState() {
   const now = Date.now();
 
   if (state.mode === "manual") {
-    if (now >= state.until) {
+    if (state.until && now >= state.until) {
       state.mode = "auto";
+      state.until = null;
+
       state.index = Math.floor(Math.random() * 2);
       state.text = variants[state.index];
+
       state.nextChange = now + randomInterval();
-    } else {
       saveState(state);
-      return;
     }
+    return;
   }
 
   if (state.mode === "auto" && now >= state.nextChange) {
     state.index = state.index === 0 ? 1 : 0;
     state.text = variants[state.index];
-
-    // ✅ ИСПРАВЛЕНИЕ (главное)
     state.nextChange = now + randomInterval();
+    saveState(state);
   }
-
-  saveState(state);
 }
 
 setInterval(updateState, 1000);
@@ -72,17 +71,20 @@ app.get("/state", (req, res) => {
 app.post("/update", (req, res) => {
   const { text, ms } = req.body;
 
+  const duration = Math.max(1000, Number(ms) || 0);
+
   state.mode = "manual";
   state.text = text;
-  state.until = Date.now() + ms;
+  state.until = Date.now() + duration;
 
   saveState(state);
   res.json({ ok: true });
 });
 
-// FRONT (БЕЗ ИЗМЕНЕНИЙ)
+// FRONT
 app.get("/", (req, res) => {
-  res.send(`<!DOCTYPE html>
+  res.send(`
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -105,24 +107,21 @@ canvas{
 }
 
 .glass{
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(16px);
+  border-radius:28px;
+  padding:34px 90px;
+  border:1px solid rgba(255,255,255,0.10);
+}
+
+h1{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  width:min(62vw,960px);
-  padding:34px 90px;
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(16px);
-  border-radius:28px;
-  border:1px solid rgba(255,255,255,0.10);
   color:#e0e7ff;
-}
-
-h1{
-  margin:0;
   font-size:78px;
   text-align:left;
-  line-height:1.1;
 }
 
 span{ color:#a78bfa; }
@@ -138,6 +137,7 @@ span{ color:#a78bfa; }
   justify-content:center;
   font-size:22px;
   cursor:pointer;
+
   background: rgba(167,139,250,0.15);
   backdrop-filter: blur(18px);
   border-radius:16px;
@@ -153,9 +153,7 @@ span{ color:#a78bfa; }
 <canvas id="c"></canvas>
 <div id="adminBtn">❤️</div>
 
-<div class="glass">
-  <h1>сейчас Ваня <span id="text">...</span></h1>
-</div>
+<h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
 
 <script>
 const c = document.getElementById("c");
@@ -197,22 +195,6 @@ addEventListener("touchmove", e=>{
 
 function flow(x,y,t){
   return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
-}
-
-function drawBlob(b,t,ox=0,oy=0){
-  let x = b.x + ox;
-  let y = b.y + oy;
-
-  let g = ctx.createRadialGradient(x,y,0,x,y,b.r);
-  g.addColorStop(0,"rgba(255,255,255,0.32)");
-  g.addColorStop(0.4,"rgba(167,139,250,0.18)");
-  g.addColorStop(1,"rgba(0,0,0,0)");
-
-  ctx.fillStyle = g;
-
-  ctx.beginPath();
-  ctx.ellipse(x,y,b.r,b.r*0.75,Math.sin(t)*0.2,0,Math.PI*2);
-  ctx.fill();
 }
 
 function draw(){
@@ -261,15 +243,30 @@ function draw(){
     b.ax *= 0.5;
     b.ay *= 0.5;
 
-    let w = innerWidth;
-    let h = innerHeight;
+    if(b.x<0)b.x=innerWidth;
+    if(b.x>innerWidth)b.x=0;
+    if(b.y<0)b.y=innerHeight;
+    if(b.y>innerHeight)b.y=0;
 
-    drawBlob(b,t);
+    let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    if(b.x < b.r) drawBlob(b,t,w,0);
-    if(b.x > w-b.r) drawBlob(b,t,-w,0);
-    if(b.y < b.r) drawBlob(b,t,0,h);
-    if(b.y > h-b.r) drawBlob(b,t,0,-h);
+    g.addColorStop(0,"rgba(255,255,255,0.28)");
+    g.addColorStop(0.4,"rgba(167,139,250,0.22)");
+    g.addColorStop(1,"rgba(5,8,22,0)");
+
+    ctx.fillStyle = g;
+
+    ctx.beginPath();
+    ctx.ellipse(
+      b.x,
+      b.y,
+      b.r,
+      b.r*0.75,
+      Math.sin(i+t)*0.2,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
   }
 
   requestAnimationFrame(draw);
@@ -308,7 +305,8 @@ adminBtn.onclick = async ()=>{
 </script>
 
 </body>
-</html>`);
+</html>
+`);
 });
 
 app.listen(3000, () => console.log("RUNNING"));
