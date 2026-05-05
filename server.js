@@ -58,7 +58,6 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
-// API
 app.get("/state", (req, res) => {
   res.json(state);
 });
@@ -74,7 +73,6 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -118,7 +116,6 @@ h1{
   margin:0;
   font-size:64px;
   color:#e0e7ff;
-  line-height:1.1;
 }
 
 span{ color:#a78bfa; }
@@ -132,7 +129,6 @@ span{ color:#a78bfa; }
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:22px;
   cursor:pointer;
 
   background: rgba(167,139,250,0.15);
@@ -164,8 +160,7 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-/* 🌊 ФИЗИКА — ВОССТАНОВЛЕНА (НЕ МЕНЯЛАСЬ) */
-
+/* 🌊 ЛЮБИМАЯ ФИЗИКА (ВОССТАНОВЛЕНА) */
 let blobs=[];
 
 for(let i=0;i<10;i++){
@@ -206,9 +201,11 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b=blobs[i];
 
+    // базовый поток (хаос)
     b.ax += flow(b.x,b.y,t)*0.4;
     b.ay += flow(b.y,b.x,t)*0.4;
 
+    // палец (мягкое притяжение)
     let dx=p.x-b.x;
     let dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
@@ -218,6 +215,9 @@ function draw(){
       b.ax+=dx*f;
       b.ay+=dy*f;
     }
+
+    // ❗ ВАЖНО: убрали взаимное "слипание"
+    // (оно раньше ломало всё и тянуло в центр)
 
     b.vx=(b.vx+b.ax)*0.9;
     b.vy=(b.vy+b.ay)*0.9;
@@ -233,13 +233,12 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 🌈 ИЗМЕНЕНО ТОЛЬКО ОФОРМЛЕНИЕ ГРАДИЕНТА */
+    /* 🌈 МЯГКОЕ ПЕРЕЛИВАНИЕ (без “пятен”) */
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.25)");
-    g.addColorStop(0.25,"rgba(199,210,254,0.35)");
-    g.addColorStop(0.55,"rgba(167,139,250,0.30)");
-    g.addColorStop(0.8,"rgba(124,58,237,0.18)");
+    g.addColorStop(0,"rgba(255,255,255,0.20)");
+    g.addColorStop(0.3,"rgba(199,210,254,0.28)");
+    g.addColorStop(0.6,"rgba(167,139,250,0.22)");
     g.addColorStop(1,"rgba(0,0,0,0)");
 
     ctx.fillStyle=g;
