@@ -96,7 +96,6 @@ body{
 canvas{
   position:fixed;
   inset:0;
-  z-index:0;
 }
 
 .glass{
@@ -134,9 +133,6 @@ span{ color:#a78bfa; }
   backdrop-filter: blur(18px);
   border-radius:16px;
   border:1px solid rgba(255,255,255,0.12);
-
-  color: rgba(167,139,250,0.95);
-  text-shadow: 0 0 14px rgba(139,92,246,0.45);
 }
 </style>
 </head>
@@ -159,37 +155,17 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-/* 🌊 ЖИДКОСТЬ */
+/* 🌊 ЖИВАЯ СИСТЕМА (без центра вообще) */
 
 let blobs=[];
 
-/* крупные */
-for(let i=0;i<3;i++){
+for(let i=0;i<14;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
-    vx:0,vy:0,ax:0,ay:0,
-    r:380 + Math.random()*420
-  });
-}
-
-/* средние */
-for(let i=0;i<6;i++){
-  blobs.push({
-    x:Math.random()*innerWidth,
-    y:Math.random()*innerHeight,
-    vx:0,vy:0,ax:0,ay:0,
-    r:120 + Math.random()*180
-  });
-}
-
-/* мелкие */
-for(let i=0;i<8;i++){
-  blobs.push({
-    x:Math.random()*innerWidth,
-    y:Math.random()*innerHeight,
-    vx:0,vy:0,ax:0,ay:0,
-    r:20 + Math.random()*60
+    vx:(Math.random()-0.5)*1.5,
+    vy:(Math.random()-0.5)*1.5,
+    r:30 + Math.random()*420
   });
 }
 
@@ -206,9 +182,9 @@ addEventListener("touchmove",e=>{
   p.y=t.clientY;
 });
 
-/* 🌪 поток */
+/* 🧠 ВИХРЕВОЕ ПОЛЕ (главная замена центра) */
 function flow(x,y,t){
-  return Math.sin(x*0.002+t)*Math.cos(y*0.002-t);
+  return Math.sin(x*0.002 + t) * Math.cos(y*0.002 - t);
 }
 
 function draw(){
@@ -220,26 +196,26 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b=blobs[i];
 
-    /* 🌪 немного УСКОРИЛИ движение */
-    b.vx += flow(b.x,b.y,t)*0.85;
-    b.vy += flow(b.y,b.x,t)*0.85;
+    /* 🌪 ВИХРЕВОЕ ДВИЖЕНИЕ (НЕ центр!) */
+    b.vx += flow(b.x,b.y,t)*0.6;
+    b.vy += flow(b.y,b.x,t)*0.6;
 
-    /* 👆 палец */
+    /* 👆 палец — мягкое притяжение */
     let dx=p.x-b.x;
     let dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
 
     if(d<800){
-      let f=(1-d/800)*0.005;
+      let f=(1-d/800)*0.004;
       b.vx+=dx*f;
       b.vy+=dy*f;
     }
 
-    /* хаос */
-    b.vx += (Math.random()-0.5)*0.35;
-    b.vy += (Math.random()-0.5)*0.35;
+    /* 💨 рассеивание (ВАЖНО: убирает “слипание”) */
+    b.vx += (Math.random()-0.5)*0.3;
+    b.vy += (Math.random()-0.5)*0.3;
 
-    /* локальные взаимодействия */
+    /* ✨ локальное взаимодействие (НЕ глобальное) */
     for(let j=0;j<blobs.length;j++){
       if(i===j) continue;
 
@@ -250,9 +226,13 @@ function draw(){
 
       if(d2<180){
         let k=(1-d2/180);
-        b.vx += dx2*k*0.001;
-        b.vx -= dx2*k*0.004;
-        b.vy -= dy2*k*0.004;
+
+        /* короткое “склеивание” */
+        b.vx+=dx2*k*0.001;
+
+        /* быстрое разлипание */
+        b.vx-=dx2*k*0.004;
+        b.vy-=dy2*k*0.004;
       }
     }
 
@@ -262,34 +242,23 @@ function draw(){
     b.x+=b.vx;
     b.y+=b.vy;
 
+    /* 💧 wrap (чтобы не собирались в центре) */
     if(b.x<0)b.x=innerWidth;
     if(b.x>innerWidth)b.x=0;
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 💧 мягкий градиент БЕЗ резких краёв */
-    let g=ctx.createRadialGradient(
-      b.x,b.y,0,
-      b.x+b.r*0.2,b.y+b.r*0.2,b.r
-    );
+    /* 🌌 жидкое свечение */
+    let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.40)");
-    g.addColorStop(0.25,"rgba(167,139,250,0.30)");
-    g.addColorStop(0.6,"rgba(139,92,246,0.12)");
-    g.addColorStop(1,"rgba(0,0,0,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.35)");
+    g.addColorStop(0.3,"rgba(167,139,250,0.25)");
+    g.addColorStop(1,"transparent");
 
     ctx.fillStyle=g;
 
     ctx.beginPath();
-    ctx.ellipse(
-      b.x,
-      b.y,
-      b.r,
-      b.r*0.7,
-      Math.sin(i+t)*0.2,
-      0,
-      Math.PI*2
-    );
+    ctx.ellipse(b.x,b.y,b.r,b.r*0.7,Math.sin(i+t)*0.2,0,Math.PI*2);
     ctx.fill();
   }
 
