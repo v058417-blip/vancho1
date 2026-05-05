@@ -86,7 +86,7 @@ app.get("/", (req, res) => {
 <meta charset="UTF-8">
 
 <style>
-html,body{
+html, body{
   margin:0;
   padding:0;
   overflow:hidden;
@@ -94,7 +94,7 @@ html,body{
   font-family:Arial;
 }
 
-/* 🌌 ТВОЙ СТАБИЛЬНЫЙ ТЁМНЫЙ ФОН */
+/* 🌌 стабильный фон */
 body{
   background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
 }
@@ -107,15 +107,20 @@ canvas{
   z-index:0;
 }
 
-/* 💎 стекло */
+/* 💎 стекло (УВЕЛИЧЕНО как ты хотела) */
 .glass{
   background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
   border:1px solid rgba(255,255,255,0.10);
-  border-radius:20px;
-  padding:20px 40px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  border-radius:28px;
+
+  padding:32px 80px;
+
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.55),
+    inset 0 0 25px rgba(255,255,255,0.05);
 }
 
 /* текст */
@@ -125,7 +130,7 @@ h1{
   left:50%;
   transform:translate(-50%,-50%);
   color:#e0e7ff;
-  font-size:42px;
+  font-size:44px;
   z-index:2;
 }
 
@@ -133,13 +138,13 @@ span{
   color:#a78bfa;
 }
 
-/* ❤️ стеклянная кнопка */
+/* ❤️ кнопка */
 #adminBtn{
   position:fixed;
   top:15px;
   left:15px;
-  width:54px;
-  height:54px;
+  width:56px;
+  height:56px;
 
   display:flex;
   align-items:center;
@@ -147,6 +152,7 @@ span{
 
   font-size:22px;
   cursor:pointer;
+
   color:rgba(255,255,255,0.9);
 
   background: rgba(255,255,255,0.05);
@@ -154,7 +160,7 @@ span{
   -webkit-backdrop-filter: blur(18px);
 
   border:1px solid rgba(255,255,255,0.12);
-  border-radius:14px;
+  border-radius:16px;
 
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
@@ -180,13 +186,15 @@ function resize(){
 resize();
 onresize = resize;
 
-/* 🧈 ЖИДКАЯ ВОДА (METABALLS) */
-let blobs = Array.from({length:8}, () => ({
+/* 🌊 ЖИДКОСТЬ (metaballs + вязкость) */
+let blobs = Array.from({length:9}, () => ({
   x: Math.random()*innerWidth,
   y: Math.random()*innerHeight,
-  vx:(Math.random()-0.5)*0.6,
-  vy:(Math.random()-0.5)*0.6,
-  r:120 + Math.random()*120
+  vx:(Math.random()-0.5)*0.4,
+  vy:(Math.random()-0.5)*0.4,
+  ax:0,
+  ay:0,
+  r:140 + Math.random()*130
 }));
 
 let pointer = null;
@@ -208,59 +216,74 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b = blobs[i];
 
-    b.x += b.vx;
-    b.y += b.vy;
+    // инерция
+    b.vx += b.ax;
+    b.vy += b.ay;
 
-    b.vx += (Math.random()-0.5)*0.03;
-    b.vy += (Math.random()-0.5)*0.03;
+    b.vx *= 0.92;
+    b.vy *= 0.92;
 
-    b.vx *= 0.96;
-    b.vy *= 0.96;
+    b.ax *= 0.85;
+    b.ay *= 0.85;
 
-    // реакция на касание
+    // самодвижение жидкости
+    b.ax += Math.sin(Date.now()*0.001 + i)*0.02;
+    b.ay += Math.cos(Date.now()*0.001 + i)*0.02;
+
+    // палец тянет жидкость
     if(pointer){
-      let dx = b.x - pointer.x;
-      let dy = b.y - pointer.y;
+      let dx = pointer.x - b.x;
+      let dy = pointer.y - b.y;
       let dist = Math.sqrt(dx*dx + dy*dy);
 
-      if(dist < 220){
-        b.vx += dx * 0.002;
-        b.vy += dy * 0.002;
+      if(dist < 260){
+        let f = (1 - dist/260)*0.05;
+        b.ax += dx * f * 0.02;
+        b.ay += dy * f * 0.02;
       }
     }
 
-    // взаимодействие (слияние как жидкость)
+    // слияние жидкости
     for(let j=0;j<blobs.length;j++){
       if(i===j) continue;
-      let b2 = blobs[j];
 
+      let b2 = blobs[j];
       let dx = b2.x - b.x;
       let dy = b2.y - b.y;
       let dist = Math.sqrt(dx*dx + dy*dy);
 
-      if(dist < 180){
-        let force = (1 - dist/180)*0.015;
-        b.vx += dx * force;
-        b.vy += dy * force;
+      if(dist < 190){
+        let f = (1 - dist/190)*0.02;
+        b.ax += dx * f;
+        b.ay += dy * f;
       }
     }
 
-    const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    b.x += b.vx;
+    b.y += b.vy;
+
+    // 💧 НЕ КРУГ — ЖЕЛЕ-ФОРМА
+    let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+
     g.addColorStop(0,"rgba(139,92,246,0.55)");
     g.addColorStop(0.5,"rgba(99,102,241,0.25)");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle = g;
+
+    let wobble = Math.sin(Date.now()*0.002 + i)*0.5;
+
     ctx.beginPath();
     ctx.ellipse(
-      b.x,
-      b.y,
-      b.r*1.2,
-      b.r*0.8,
-      Math.sin(b.x*0.01),
+      b.x + Math.sin(i)*10,
+      b.y + Math.cos(i)*10,
+      b.r * (1 + wobble*0.15),
+      b.r * (0.7 - wobble*0.15),
+      wobble,
       0,
       Math.PI*2
     );
+
     ctx.fill();
   }
 
