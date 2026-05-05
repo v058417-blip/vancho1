@@ -92,7 +92,11 @@ html,body{
 }
 
 body{
-  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
+  background: radial-gradient(circle at 30% 30%,
+    #2a2366,
+    #0f1430 55%,
+    #050816
+  );
 }
 
 canvas{
@@ -100,39 +104,40 @@ canvas{
   inset:0;
 }
 
-/* 📦 УВЕЛИЧЕННАЯ ТАБЛИЧКА */
+/* 📦 ПАНЕЛЬ */
 .glass{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
 
-  width: calc(100% - 80px); /* ~1cm+ отступ с каждой стороны */
-  max-width: 900px;
+  width:90vw;
+  max-width:1100px;
 
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(18px);
-  border-radius:32px;
 
-  padding:70px 100px; /* ×2 примерно */
+  border-radius:34px;
+
+  padding:80px 110px;
 
   border:1px solid rgba(255,255,255,0.10);
 
   text-align:center;
 }
 
-/* текст */
+/* 🔤 текст */
 h1{
   margin:0;
   color:#e0e7ff;
-  font-size:56px;
+  font-size: clamp(44px, 4.2vw, 64px);
 }
 
 span{
-  color:#a78bfa;
+  color:#b6a3ff;
 }
 
-/* ❤️ стеклянная кнопка */
+/* ❤️ админка */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -245,13 +250,13 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    // 💜 ОБНОВЛЁННЫЙ ГРАДИЕНТ
+    // 💜 мягкий яркий градиент
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.28)");
-    g.addColorStop(0.25,"rgba(167,139,250,0.20)");
-    g.addColorStop(0.6,"rgba(139,92,246,0.14)");
-    g.addColorStop(1,"rgba(30,27,75,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.30)");
+    g.addColorStop(0.2,"rgba(180,160,255,0.22)");
+    g.addColorStop(0.5,"rgba(139,92,246,0.16)");
+    g.addColorStop(1,"rgba(10,10,30,0)");
 
     ctx.fillStyle=g;
 
