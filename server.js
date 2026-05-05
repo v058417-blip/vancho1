@@ -120,7 +120,6 @@ span{
   text-shadow: 0 0 18px rgba(167,139,250,0.5);
 }
 
-/* 💜 АДМИНКА (исправлено сердце) */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -139,7 +138,7 @@ span{
   border:1px solid rgba(255,255,255,0.12);
 
   color:#c4b5fd;
-  text-shadow: 0 0 18px rgba(196,181,253,0.85);
+  text-shadow: 0 0 16px rgba(196,181,253,0.7);
 }
 </style>
 </head>
@@ -162,29 +161,19 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-/* 🌊 МЕНЬШЕ ОБЪЕКТОВ + БОЛЬШЕ РАЗМЕР */
+/* 🌊 ВОЗВРАЩЁН ХАОС + РАССТРЕСКИВАНИЕ + СКОРОСТЬ */
 
 let blobs=[];
 
-/* было 14 → стало 6 (чище и стабильнее) */
-for(let i=0;i<4;i++){
+/* меньше объектов, но крупнее */
+for(let i=0;i<6;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
-    vx:(Math.random()-0.5)*1.2,
-    vy:(Math.random()-0.5)*1.2,
-    r:380 + Math.random()*520   // ⬆ крупнее
-  });
-}
-
-/* дополнительные мягкие массы */
-for(let i=0;i<2;i++){
-  blobs.push({
-    x:Math.random()*innerWidth,
-    y:Math.random()*innerHeight,
-    vx:(Math.random()-0.5)*1.0,
-    vy:(Math.random()-0.5)*1.0,
-    r:220 + Math.random()*260
+    vx:(Math.random()-0.5)*2.2,   // ⚡ быстрее
+    vy:(Math.random()-0.5)*2.2,
+    ax:0, ay:0,
+    r:260 + Math.random()*420
   });
 }
 
@@ -211,45 +200,72 @@ function draw(){
 
   let t=Date.now()*0.001;
 
-  for(let b of blobs){
+  for(let i=0;i<blobs.length;i++){
+    let b=blobs[i];
 
-    b.vx += flow(b.x,b.y,t)*0.45;
-    b.vy += flow(b.y,b.x,t)*0.45;
+    /* 🌪 СИЛЬНЕЕ ХАОС (как ты хотела раньше) */
+    b.ax += flow(b.x,b.y,t)*0.9;
+    b.ay += flow(b.y,b.x,t)*0.9;
 
+    /* 🌬 постоянное рассеивание */
+    b.ax += (Math.random()-0.5)*0.6;
+    b.ay += (Math.random()-0.5)*0.6;
+
+    /* 👆 мягкое притяжение */
     let dx=p.x-b.x;
     let dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
 
     if(d<900){
-      let f=(1-d/900)*0.0025;
-      b.vx+=dx*f;
-      b.vy+=dy*f;
+      let f=(1-d/900)*0.003;
+      b.ax+=dx*f;
+      b.ay+=dy*f;
     }
 
-    b.vx += (Math.random()-0.5)*0.08;
-    b.vy += (Math.random()-0.5)*0.08;
+    /* ✨ локальные взаимодействия (чтобы НЕ слипалось в центр) */
+    for(let j=0;j<blobs.length;j++){
+      if(i===j) continue;
 
-    b.vx*=0.95;
-    b.vy*=0.95;
+      let o=blobs[j];
+      let dx2=o.x-b.x;
+      let dy2=o.y-b.y;
+      let d2=Math.sqrt(dx2*dx2+dy2*dy2);
 
-    b.x+=b.vx;
-    b.y+=b.vy;
+      if(d2<200){
+        let k=(1-d2/200);
 
+        b.ax -= dx2*k*0.004; // разлепление
+        b.ay -= dy2*k*0.004;
+      }
+    }
+
+    /* 🧊 инерция */
+    b.vx = (b.vx + b.ax) * 0.9;
+    b.vy = (b.vy + b.ay) * 0.9;
+
+    b.x += b.vx;
+    b.y += b.vy;
+
+    b.ax *= 0.4;
+    b.ay *= 0.4;
+
+    /* 🌌 wrap */
     if(b.x<0)b.x=innerWidth;
     if(b.x>innerWidth)b.x=0;
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
+    /* 💜 мягкое свечение */
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.28)");
-    g.addColorStop(0.4,"rgba(167,139,250,0.20)");
-    g.addColorStop(1,"rgba(0,0,0,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.32)");
+    g.addColorStop(0.4,"rgba(167,139,250,0.22)");
+    g.addColorStop(1,"transparent");
 
     ctx.fillStyle=g;
 
     ctx.beginPath();
-    ctx.ellipse(b.x,b.y,b.r,b.r*0.72,0,0,Math.PI*2);
+    ctx.ellipse(b.x,b.y,b.r,b.r*0.7,Math.sin(i+t)*0.2,0,Math.PI*2);
     ctx.fill();
   }
 
