@@ -119,14 +119,13 @@ canvas{
 
 h1{
   margin:0;
-  font-size:78px; /* ~1.7x */
+  font-size:78px;
   text-align:left;
   line-height:1.1;
 }
 
 span{ color:#a78bfa; }
 
-/* ❤️ */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -206,10 +205,10 @@ function drawBlob(b,t,ox=0,oy=0){
 
   let g = ctx.createRadialGradient(x,y,0,x,y,b.r);
 
-  g.addColorStop(0,"rgba(255,255,255,0.35)");
-  g.addColorStop(0.3,"rgba(167,139,250,0.28)");
-  g.addColorStop(0.65,"rgba(30,27,75,0.15)");
-  g.addColorStop(1,"rgba(5,8,22,1)");
+  /* ВЕРНУЛ ЛЮБИМЫЙ ГРАДИЕНТ */
+  g.addColorStop(0,"rgba(255,255,255,0.22)");
+  g.addColorStop(0.4,"rgba(167,139,250,0.18)");
+  g.addColorStop(1,"rgba(0,0,0,0)");
 
   ctx.fillStyle = g;
 
@@ -275,10 +274,8 @@ function draw(){
     let w = innerWidth;
     let h = innerHeight;
 
-    // основной
     drawBlob(b,t);
 
-    // мягкие дубли чтобы убрать "прыжки"
     if(b.x < b.r) drawBlob(b,t,w,0);
     if(b.x > w-b.r) drawBlob(b,t,-w,0);
     if(b.y < b.r) drawBlob(b,t,0,h);
@@ -289,7 +286,6 @@ function draw(){
 }
 draw();
 
-// TEXT
 async function load(){
   let r = await fetch("/state");
   let d = await r.json();
@@ -298,7 +294,6 @@ async function load(){
 load();
 setInterval(load,1000);
 
-// ADMIN
 adminBtn.onclick = async ()=>{
   let pass = prompt("пароль");
   if(pass !== "4724") return;
