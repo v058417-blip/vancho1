@@ -45,9 +45,7 @@ function updateState() {
       state.index = Math.floor(Math.random() * 2);
       state.text = variants[state.index];
       state.nextChange = now + randomInterval();
-    } else {
-      return saveState(state);
-    }
+    } else return saveState(state);
   }
 
   if (state.mode === "auto" && now >= state.nextChange) {
@@ -76,8 +74,6 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-/* ================= FRONT ================= */
-
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -100,13 +96,11 @@ body{
 canvas{
   position:fixed;
   inset:0;
-  z-index:0;
 }
 
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-radius:28px;
   padding:34px 90px;
   border:1px solid rgba(255,255,255,0.10);
@@ -119,7 +113,6 @@ h1{
   transform:translate(-50%,-50%);
   color:#e0e7ff;
   font-size:46px;
-  z-index:2;
 }
 
 span{ color:#a78bfa; }
@@ -135,12 +128,11 @@ span{ color:#a78bfa; }
   justify-content:center;
   font-size:22px;
   cursor:pointer;
+
   background: rgba(255,255,255,0.05);
   backdrop-filter: blur(18px);
-  border:1px solid rgba(255,255,255,0.12);
   border-radius:16px;
-  color:white;
-  z-index:3;
+  border:1px solid rgba(255,255,255,0.12);
 }
 </style>
 </head>
@@ -153,54 +145,31 @@ span{ color:#a78bfa; }
 <h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
 
 <script>
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
+const c=document.getElementById("c");
+const ctx=c.getContext("2d");
 
 function resize(){
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
+  c.width=innerWidth;
+  c.height=innerHeight;
 }
 resize();
-addEventListener("resize", resize);
+addEventListener("resize",resize);
 
-/* ================= FLUID CHAOS ================= */
+/* 🌊 ЖИВАЯ СИСТЕМА (без центра вообще) */
 
-let blobs = [];
+let blobs=[];
 
-/* крупные */
-for(let i=0;i<3;i++){
+for(let i=0;i<14;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
-    vx:0,vy:0,
-    ax:0,ay:0,
-    r:380 + Math.random()*420
+    vx:(Math.random()-0.5)*1.5,
+    vy:(Math.random()-0.5)*1.5,
+    r:30 + Math.random()*420
   });
 }
 
-/* средние */
-for(let i=0;i<6;i++){
-  blobs.push({
-    x:Math.random()*innerWidth,
-    y:Math.random()*innerHeight,
-    vx:0,vy:0,
-    ax:0,ay:0,
-    r:120 + Math.random()*180
-  });
-}
-
-/* мелкие */
-for(let i=0;i<8;i++){
-  blobs.push({
-    x:Math.random()*innerWidth,
-    y:Math.random()*innerHeight,
-    vx:0,vy:0,
-    ax:0,ay:0,
-    r:20 + Math.random()*60
-  });
-}
-
-let p = {x:innerWidth/2,y:innerHeight/2};
+let p={x:0,y:0};
 
 addEventListener("mousemove",e=>{
   p.x=e.clientX;
@@ -213,31 +182,40 @@ addEventListener("touchmove",e=>{
   p.y=t.clientY;
 });
 
-/* ================= CHAOS FLUID ================= */
+/* 🧠 ВИХРЕВОЕ ПОЛЕ (главная замена центра) */
+function flow(x,y,t){
+  return Math.sin(x*0.002 + t) * Math.cos(y*0.002 - t);
+}
 
 function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.clearRect(0,0,c.width,c.height);
   ctx.globalCompositeOperation="lighter";
+
+  let t=Date.now()*0.001;
 
   for(let i=0;i<blobs.length;i++){
     let b=blobs[i];
 
+    /* 🌪 ВИХРЕВОЕ ДВИЖЕНИЕ (НЕ центр!) */
+    b.vx += flow(b.x,b.y,t)*0.6;
+    b.vy += flow(b.y,b.x,t)*0.6;
+
+    /* 👆 палец — мягкое притяжение */
     let dx=p.x-b.x;
     let dy=p.y-b.y;
-    let dist=Math.sqrt(dx*dx+dy*dy);
+    let d=Math.sqrt(dx*dx+dy*dy);
 
-    /* мягкое следование */
-    if(dist<900){
-      let f=(1-dist/900)*0.004;
-      b.ax+=dx*f;
-      b.ay+=dy*f;
+    if(d<800){
+      let f=(1-d/800)*0.004;
+      b.vx+=dx*f;
+      b.vy+=dy*f;
     }
 
-    /* турбулентность (хаос жидкости) */
-    b.ax+=Math.sin(Date.now()*0.001+i)*0.006;
-    b.ay+=Math.cos(Date.now()*0.001+i)*0.006;
+    /* 💨 рассеивание (ВАЖНО: убирает “слипание”) */
+    b.vx += (Math.random()-0.5)*0.3;
+    b.vy += (Math.random()-0.5)*0.3;
 
-    /* взаимодействие: ПРИБЛИЖЕНИЕ + РАЗЛЁТ */
+    /* ✨ локальное взаимодействие (НЕ глобальное) */
     for(let j=0;j<blobs.length;j++){
       if(i===j) continue;
 
@@ -246,54 +224,41 @@ function draw(){
       let dy2=o.y-b.y;
       let d2=Math.sqrt(dx2*dx2+dy2*dy2);
 
-      if(d2<500){
-        let k=(1-d2/500);
+      if(d2<180){
+        let k=(1-d2/180);
 
-        /* краткое “слияние” */
-        b.ax+=dx2*k*0.002;
+        /* короткое “склеивание” */
+        b.vx+=dx2*k*0.001;
 
-        /* мгновенное разъединение */
-        b.ax-=dx2*k*0.003;
-        b.ay-=dy2*k*0.003;
-
-        /* хаотический отскок */
-        b.ax+=(Math.random()-0.5)*k*0.01;
-        b.ay+=(Math.random()-0.5)*k*0.01;
+        /* быстрое разлипание */
+        b.vx-=dx2*k*0.004;
+        b.vy-=dy2*k*0.004;
       }
     }
 
-    /* инерция жидкости */
-    b.vx=(b.vx+b.ax)*0.9;
-    b.vy=(b.vy+b.ay)*0.9;
+    b.vx*=0.92;
+    b.vy*=0.92;
 
     b.x+=b.vx;
     b.y+=b.vy;
 
-    b.ax*=0.5;
-    b.ay*=0.5;
+    /* 💧 wrap (чтобы не собирались в центре) */
+    if(b.x<0)b.x=innerWidth;
+    if(b.x>innerWidth)b.x=0;
+    if(b.y<0)b.y=innerHeight;
+    if(b.y>innerHeight)b.y=0;
 
-    /* мягкое свечение без контуров */
+    /* 🌌 жидкое свечение */
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    let a=b.r>300?0.45:b.r>100?0.25:0.12;
-
-    g.addColorStop(0,"rgba(255,255,255,"+a+")");
-    g.addColorStop(0.3,"rgba(167,139,250,"+(a*0.7)+")");
+    g.addColorStop(0,"rgba(255,255,255,0.35)");
+    g.addColorStop(0.3,"rgba(167,139,250,0.25)");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle=g;
 
     ctx.beginPath();
-    ctx.ellipse(
-      b.x,
-      b.y,
-      b.r,
-      b.r*0.75,
-      Math.sin(i+Date.now()*0.001)*0.2,
-      0,
-      Math.PI*2
-    );
-
+    ctx.ellipse(b.x,b.y,b.r,b.r*0.7,Math.sin(i+t)*0.2,0,Math.PI*2);
     ctx.fill();
   }
 
