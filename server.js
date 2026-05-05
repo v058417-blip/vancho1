@@ -13,20 +13,34 @@ function randomInterval() {
   return 60000 + Math.random() * (3 * 24 * 60 * 60 * 1000);
 }
 
+// 👉 ВСЕГДА новый старт (решает проблему "всегда натурал")
+function createFreshState() {
+  const index = Math.floor(Math.random() * 2);
+  return {
+    mode: "auto",
+    index,
+    text: variants[index],
+    nextChange: Date.now() + randomInterval(),
+    until: null
+  };
+}
+
 function loadState() {
   try {
-    return JSON.parse(fs.readFileSync(FILE, "utf8"));
+    const data = JSON.parse(fs.readFileSync(FILE, "utf8"));
+
+    // защита от залипания
+    if (!data || !variants.includes(data.text)) {
+      const fresh = createFreshState();
+      fs.writeFileSync(FILE, JSON.stringify(fresh));
+      return fresh;
+    }
+
+    return data;
   } catch {
-    const index = Math.floor(Math.random() * 2);
-    const state = {
-      mode: "auto",
-      index,
-      text: variants[index],
-      nextChange: Date.now() + randomInterval(),
-      until: null
-    };
-    fs.writeFileSync(FILE, JSON.stringify(state));
-    return state;
+    const fresh = createFreshState();
+    fs.writeFileSync(FILE, JSON.stringify(fresh));
+    return fresh;
   }
 }
 
@@ -34,26 +48,20 @@ function saveState(s) {
   fs.writeFileSync(FILE, JSON.stringify(s));
 }
 
-let state = loadState();
+let state = createFreshState(); // 👉 КЛЮЧ: не используем старое при запуске
 
 function updateState() {
   const now = Date.now();
 
   if (state.mode === "manual") {
     if (state.until && now >= state.until) {
-      state.mode = "auto";
-      state.until = null;
-
-      state.index = Math.floor(Math.random() * 2);
-      state.text = variants[state.index];
-
-      state.nextChange = now + randomInterval();
+      state = createFreshState();
       saveState(state);
     }
     return;
   }
 
-  if (state.mode === "auto" && now >= state.nextChange) {
+  if (now >= state.nextChange) {
     state.index = state.index === 0 ? 1 : 0;
     state.text = variants[state.index];
     state.nextChange = now + randomInterval();
@@ -71,11 +79,9 @@ app.get("/state", (req, res) => {
 app.post("/update", (req, res) => {
   const { text, ms } = req.body;
 
-  const duration = Math.max(1000, Number(ms) || 0);
-
   state.mode = "manual";
   state.text = text;
-  state.until = Date.now() + duration;
+  state.until = Date.now() + Math.max(1000, Number(ms) || 0);
 
   saveState(state);
   res.json({ ok: true });
@@ -107,18 +113,21 @@ canvas{
 }
 
 .glass{
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(16px);
-  border-radius:28px;
-  padding:34px 90px;
-  border:1px solid rgba(255,255,255,0.10);
-}
-
-h1{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
+  width:min(92vw,1200px); /* 👉 чуть шире */
+  padding:34px 90px;
+
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(16px);
+  border-radius:28px;
+  border:1px solid rgba(255,255,255,0.10);
+}
+
+h1{
+  margin:0;
   color:#e0e7ff;
   font-size:78px;
   text-align:left;
@@ -143,7 +152,6 @@ span{ color:#a78bfa; }
   border-radius:16px;
   border:1px solid rgba(167,139,250,0.35);
   color:#a78bfa;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 </style>
 </head>
@@ -153,7 +161,9 @@ span{ color:#a78bfa; }
 <canvas id="c"></canvas>
 <div id="adminBtn">❤️</div>
 
-<h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
+<div class="glass">
+  <h1>сейчас Ваня <span id="text">...</span></h1>
+</div>
 
 <script>
 const c = document.getElementById("c");
@@ -195,6 +205,32 @@ addEventListener("touchmove", e=>{
 
 function flow(x,y,t){
   return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
+}
+
+// 👉 мягкое отображение без скачков
+function drawBlob(b, t, ox=0, oy=0){
+  let x = b.x + ox;
+  let y = b.y + oy;
+
+  let g = ctx.createRadialGradient(x,y,0,x,y,b.r);
+
+  g.addColorStop(0,"rgba(255,255,255,0.28)");
+  g.addColorStop(0.4,"rgba(167,139,250,0.22)");
+  g.addColorStop(1,"rgba(5,8,22,0)");
+
+  ctx.fillStyle = g;
+
+  ctx.beginPath();
+  ctx.ellipse(
+    x,
+    y,
+    b.r,
+    b.r*0.75,
+    Math.sin(t)*0.2,
+    0,
+    Math.PI*2
+  );
+  ctx.fill();
 }
 
 function draw(){
@@ -243,30 +279,16 @@ function draw(){
     b.ax *= 0.5;
     b.ay *= 0.5;
 
-    if(b.x<0)b.x=innerWidth;
-    if(b.x>innerWidth)b.x=0;
-    if(b.y<0)b.y=innerHeight;
-    if(b.y>innerHeight)b.y=0;
+    let w = innerWidth;
+    let h = innerHeight;
 
-    let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    drawBlob(b,t,0,0);
 
-    g.addColorStop(0,"rgba(255,255,255,0.28)");
-    g.addColorStop(0.4,"rgba(167,139,250,0.22)");
-    g.addColorStop(1,"rgba(5,8,22,0)");
-
-    ctx.fillStyle = g;
-
-    ctx.beginPath();
-    ctx.ellipse(
-      b.x,
-      b.y,
-      b.r,
-      b.r*0.75,
-      Math.sin(i+t)*0.2,
-      0,
-      Math.PI*2
-    );
-    ctx.fill();
+    // 👉 плавные края без рывков
+    if(b.x < b.r) drawBlob(b,t,w,0);
+    if(b.x > w-b.r) drawBlob(b,t,-w,0);
+    if(b.y < b.r) drawBlob(b,t,0,h);
+    if(b.y > h-b.r) drawBlob(b,t,0,-h);
   }
 
   requestAnimationFrame(draw);
