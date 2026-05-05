@@ -45,6 +45,8 @@ function updateState() {
       state.index = Math.floor(Math.random() * 2);
       state.text = variants[state.index];
       state.nextChange = now + randomInterval();
+    } else {
+      return saveState(state);
     }
   }
 
@@ -74,8 +76,6 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-/* ================= FRONT ================= */
-
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -91,12 +91,10 @@ html,body{
   font-family:Arial;
 }
 
-/* 💥 ЖЁСТКО ЗАФИКСИРОВАННЫЙ ФОН */
 body{
   background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
 }
 
-/* canvas НЕ может ломать UI */
 canvas{
   position:fixed;
   top:0;
@@ -110,9 +108,8 @@ canvas{
   backdrop-filter: blur(16px);
   border-radius:28px;
   padding:34px 90px;
-  border:1px solid rgba(255,255,255,0.12);
-  box-shadow:0 20px 60px rgba(0,0,0,0.5);
-  z-index:2;
+  border:1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
 }
 
 h1{
@@ -123,9 +120,10 @@ h1{
   color:#e0e7ff;
   font-size:46px;
   z-index:2;
+  text-shadow:0 0 20px rgba(139,92,246,0.25);
 }
 
-span{color:#a78bfa;}
+span{ color:#a78bfa; }
 
 #adminBtn{
   position:fixed;
@@ -134,15 +132,17 @@ span{color:#a78bfa;}
   width:56px;
   height:56px;
   display:flex;
-  justify-content:center;
   align-items:center;
-  border-radius:16px;
+  justify-content:center;
+  font-size:22px;
   cursor:pointer;
-  background:rgba(255,255,255,0.05);
-  backdrop-filter:blur(18px);
+
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(18px);
+  border-radius:16px;
   border:1px solid rgba(255,255,255,0.12);
-  z-index:3;
   color:white;
+  z-index:3;
 }
 </style>
 </head>
@@ -155,117 +155,139 @@ span{color:#a78bfa;}
 <h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
 
 <script>
-/* ================= SAFE CANVAS ================= */
-
-const c=document.getElementById("c");
-const ctx=c.getContext("2d");
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
 
 function resize(){
-  c.width=innerWidth;
-  c.height=innerHeight;
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
 }
 resize();
-onresize=resize;
+onresize = resize;
 
-let blobs=[];
+/* 🌊 стабильные “жидкие массы” */
+let blobs = [];
 
 // большие
+for(let i=0;i<4;i++){
+  blobs.push({
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight,
+    vx:0,vy:0,
+    r:320 + Math.random()*260
+  });
+}
+
+// средние
 for(let i=0;i<5;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
     vx:0,vy:0,
-    r:300+Math.random()*250
+    r:140 + Math.random()*120
   });
 }
 
-// средние
-for(let i=0;i<6;i++){
+// мелкие (почти невидимые)
+for(let i=0;i<8;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
-    vx:0,vy:0,
-    r:100+Math.random()*120
+    vx:(Math.random()-0.5)*0.6,
+    vy:(Math.random()-0.5)*0.6,
+    r:25 + Math.random()*50
   });
 });
 
-// мелкие (почти прозрачные)
-for(let i=0;i<10;i++){
-  blobs.push({
-    x:Math.random()*innerWidth,
-    y:Math.random()*innerHeight,
-    vx:(Math.random()-0.5)*0.5,
-    vy:(Math.random()-0.5)*0.5,
-    r:30+Math.random()*40
-  });
+let pointer = {x:innerWidth/2,y:innerHeight/2};
+
+window.addEventListener("mousemove",e=>{
+  pointer.x=e.clientX;
+  pointer.y=e.clientY;
 });
 
-let p={x:innerWidth/2,y:innerHeight/2};
-
-addEventListener("mousemove",e=>{
-  p.x=e.clientX;
-  p.y=e.clientY;
-});
-
-addEventListener("touchmove",e=>{
+window.addEventListener("touchmove",e=>{
   let t=e.touches[0];
-  p.x=t.clientX;
-  p.y=t.clientY;
+  pointer.x=t.clientX;
+  pointer.y=t.clientY;
 });
+
+function glow(x,y,r,intensity){
+  let g = ctx.createRadialGradient(x,y,0,x,y,r);
+
+  g.addColorStop(0,`rgba(167,139,250,${0.30*intensity})`);
+  g.addColorStop(0.4,`rgba(139,92,246,${0.12*intensity})`);
+  g.addColorStop(1,"rgba(0,0,0,0)");
+
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fill();
+}
 
 function draw(){
-  ctx.clearRect(0,0,c.width,c.height);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.globalCompositeOperation="lighter";
 
   for(let b of blobs){
 
-    let dx=p.x-b.x;
-    let dy=p.y-b.y;
-    let d=Math.sqrt(dx*dx+dy*dy);
+    // движение
+    b.vx += (Math.random()-0.5)*0.01;
+    b.vy += (Math.random()-0.5)*0.01;
 
-    if(d<900){
-      let f=(1-d/900)*0.02;
-      b.vx+=dx*f;
-      b.vy+=dy*f;
+    let dx = pointer.x - b.x;
+    let dy = pointer.y - b.y;
+    let d = Math.sqrt(dx*dx + dy*dy);
+
+    if(d < 850){
+      let f = (1 - d/850)*0.02;
+      b.vx += dx*f;
+      b.vy += dy*f;
     }
 
-    b.vx*=0.94;
-    b.vy*=0.94;
+    b.vx *= 0.94;
+    b.vy *= 0.94;
 
-    b.x+=b.vx;
-    b.y+=b.vy;
+    b.x += b.vx;
+    b.y += b.vy;
 
-    let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    // 💡 мягкое “световое наложение” (НЕ слипание)
+    let intensity = 1;
 
-    g.addColorStop(0,"rgba(167,139,250,0.45)");
-    g.addColorStop(0.4,"rgba(139,92,246,0.18)");
-    g.addColorStop(1,"rgba(0,0,0,0)");
+    for(let o of blobs){
+      if(o === b) continue;
 
-    ctx.fillStyle=g;
-    ctx.beginPath();
-    ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
-    ctx.fill();
+      let dx2 = b.x - o.x;
+      let dy2 = b.y - o.y;
+      let dist = Math.sqrt(dx2*dx2 + dy2*dy2);
+
+      if(dist < (b.r + o.r)*0.35){
+        intensity += 0.2;
+      }
+    }
+
+    if(b.r < 60) intensity *= 0.4;
+
+    glow(b.x,b.y,b.r,intensity);
   }
 
   requestAnimationFrame(draw);
 }
 draw();
 
-/* ================= STATE ================= */
-
+/* state */
 async function load(){
   try{
-    let r=await fetch("/state");
-    let d=await r.json();
-    document.getElementById("text").textContent=d.text;
+    let r = await fetch("/state");
+    let d = await r.json();
+    document.getElementById("text").textContent = d.text;
   }catch(e){}
 }
 
 load();
 setInterval(load,1000);
 
-/* ================= ADMIN ================= */
-
+/* admin */
 adminBtn.onclick=async()=>{
   let pass=prompt("пароль");
   if(pass!=="4724")return;
