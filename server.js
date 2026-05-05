@@ -61,6 +61,7 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
+// API
 app.get("/state", (req, res) => {
   res.json(state);
 });
@@ -76,6 +77,7 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
+// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -92,7 +94,6 @@ html,body{
   font-family:Arial;
 }
 
-/* 🌌 фон */
 body{
   background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
 }
@@ -145,8 +146,8 @@ span{ color:#a78bfa; }
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:22px;
 
+  font-size:22px;
   cursor:pointer;
 
   background: rgba(255,255,255,0.05);
@@ -182,28 +183,28 @@ function resize(){
 resize();
 onresize = resize;
 
-/* 🌊 3–4 БОЛЬШИХ ЖИДКИХ МАССЫ + МЕЛКИЕ */
+/* 🌊 5 ОГРОМНЫХ + 5 МЕЛКИХ */
 let blobs = [];
 
-// 💜 большие массы (основа жидкости)
-for(let i=0;i<4;i++){
+// 💜 огромные массы (главная жидкость)
+for(let i=0;i<5;i++){
   blobs.push({
     x: Math.random()*innerWidth,
     y: Math.random()*innerHeight,
     vx:0, vy:0,
     ax:0, ay:0,
-    r:260 + Math.random()*180
+    r:380 + Math.random()*260   // 👈 ЕЩЁ БОЛЬШЕ
   });
 }
 
-// ✨ мелкие "частицы-капли"
-for(let i=0;i<6;i++){
+// ✨ мелкие частицы
+for(let i=0;i<5;i++){
   blobs.push({
     x: Math.random()*innerWidth,
     y: Math.random()*innerHeight,
     vx:0, vy:0,
     ax:0, ay:0,
-    r:80 + Math.random()*60
+    r:100 + Math.random()*90
   });
 }
 
@@ -222,28 +223,27 @@ window.addEventListener("touchmove",e=>{
 
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-
   ctx.globalCompositeOperation = "lighter";
 
   for(let i=0;i<blobs.length;i++){
     let b = blobs[i];
 
-    // 🌊 мягкое внутреннее течение
-    b.ax += Math.sin(Date.now()*0.001 + i)*0.015;
-    b.ay += Math.cos(Date.now()*0.001 + i)*0.015;
+    // 🌊 мягкое течение
+    b.ax += Math.sin(Date.now()*0.001 + i)*0.01;
+    b.ay += Math.cos(Date.now()*0.001 + i)*0.01;
 
-    // 👆 палец тянет ВСЮ массу
+    // 👆 притяжение к пальцу
     let dx = pointer.x - b.x;
     let dy = pointer.y - b.y;
     let dist = Math.sqrt(dx*dx + dy*dy);
 
-    if(dist < 700){
-      let force = (1 - dist/700)*0.04;
-      b.ax += dx * force * 0.015;
-      b.ay += dy * force * 0.015;
+    if(dist < 800){
+      let f = (1 - dist/800)*0.025;
+      b.ax += dx * f * 0.01;
+      b.ay += dy * f * 0.01;
     }
 
-    // 🌐 мягкое слияние
+    // 🌐 ВАЖНО: ОТТАЛКИВАНИЕ + слабое сцепление
     for(let j=0;j<blobs.length;j++){
       if(i===j) continue;
 
@@ -252,16 +252,22 @@ function draw(){
       let dy2 = b2.y - b.y;
       let d2 = Math.sqrt(dx2*dx2 + dy2*dy2);
 
-      if(d2 < 260){
-        let f = (1 - d2/260)*0.01;
-        b.ax += dx2 * f;
-        b.ay += dy2 * f;
+      if(d2 < 420){
+        let k = (1 - d2/420);
+
+        // ❌ отталкивание (чтобы не слипались)
+        b.ax -= dx2 * k * 0.01;
+        b.ay -= dy2 * k * 0.01;
+
+        // ✔ лёгкое сцепление (чтобы было “жидко”)
+        b.ax += dx2 * k * 0.003;
+        b.ay += dy2 * k * 0.003;
       }
     }
 
-    // 🧈 плавность (очень мягкая вязкость)
-    b.vx = (b.vx + b.ax) * 0.86;
-    b.vy = (b.vy + b.ay) * 0.86;
+    // 🧈 вязкость
+    b.vx = (b.vx + b.ax) * 0.84;
+    b.vy = (b.vy + b.ay) * 0.84;
 
     b.x += b.vx;
     b.y += b.vy;
@@ -269,7 +275,7 @@ function draw(){
     b.ax *= 0.5;
     b.ay *= 0.5;
 
-    // 💧 жидкая форма
+    // 💧 форма жидкости
     let wobble = Math.sin(Date.now()*0.0015 + i)*0.4;
 
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
@@ -282,8 +288,8 @@ function draw(){
 
     ctx.beginPath();
     ctx.ellipse(
-      b.x + Math.sin(i)*18,
-      b.y + Math.cos(i)*18,
+      b.x + Math.sin(i)*20,
+      b.y + Math.cos(i)*20,
       b.r * (1 + wobble*0.2),
       b.r * (0.8 - wobble*0.2),
       wobble,
