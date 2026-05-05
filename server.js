@@ -86,28 +86,26 @@ app.get("/", (req, res) => {
 <meta charset="UTF-8">
 
 <style>
-body{
+html, body{
   margin:0;
+  padding:0;
   overflow:hidden;
+  height:100%;
   font-family:Arial;
-
-  /* ТВОЙ ФОН */
-  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
 }
 
-/* canvas */
+/* 🔥 ФОН (ЖЁСТКО ЗАФИКСИРОВАН, БЕЗ БЕЛИЗНЫ) */
+body{
+  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 65%, #050816);
+}
+
+/* canvas НЕ влияет на фон */
 canvas{
   position:fixed;
   top:0;
   left:0;
-}
-
-/* стекло (упрощённое, стабильное) */
-.glass{
-  background: rgba(255,255,255,0.08);
-  border-radius:20px;
-  padding:20px 40px;
-  backdrop-filter: blur(12px);
+  z-index:0;
+  pointer-events:none;
 }
 
 /* текст */
@@ -116,40 +114,66 @@ h1{
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  color:#e0e7ff;
   font-size:42px;
+  color:#e0e7ff;
+  z-index:2;
 }
 
 span{
   color:#a78bfa;
 }
 
-/* кнопка */
+/* 💎 стекло (без выбеливания!) */
+.glass{
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius:20px;
+  box-shadow:
+    inset 0 0 25px rgba(255,255,255,0.05),
+    0 10px 40px rgba(0,0,0,0.6);
+}
+
+/* ❤️ кнопка стеклянная */
 #adminBtn{
   position:fixed;
   top:15px;
   left:15px;
-  width:50px;
-  height:50px;
+  width:55px;
+  height:55px;
+
   display:flex;
   align-items:center;
   justify-content:center;
-  border-radius:12px;
+
+  font-size:22px;
   cursor:pointer;
+
+  color:rgba(255,255,255,0.85);
+
+  /* стекло */
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:16px;
+
+  box-shadow:
+    inset 0 0 20px rgba(255,255,255,0.08),
+    0 10px 30px rgba(0,0,0,0.5);
 }
 </style>
-
 </head>
 
 <body>
 
 <canvas id="c"></canvas>
 
-<div id="adminBtn" class="glass">❤️</div>
+<div id="adminBtn">❤️</div>
 
-<h1 class="glass">
-  сейчас Ваня <span id="text">...</span>
-</h1>
+<h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
 
 <script>
 const canvas = document.getElementById("c");
@@ -162,55 +186,53 @@ function resize(){
 resize();
 onresize = resize;
 
-/* 💜 ЖИВАЯ ВОДА (упрощённая, но РАБОТАЕТ) */
-let blobs = Array.from({length:5}, () => ({
+/* 🌊 ЖИВАЯ ВОДА (оставлена, но НЕ ломает фон) */
+let blobs = Array.from({length:6}, () => ({
   x: Math.random()*innerWidth,
   y: Math.random()*innerHeight,
   vx:(Math.random()-0.5)*0.5,
   vy:(Math.random()-0.5)*0.5,
-  r:200 + Math.random()*100
+  r:220 + Math.random()*120
 }));
 
 let pointer = null;
 
-canvas.onmousemove = e => {
-  pointer = {x:e.clientX, y:e.clientY};
-};
+window.addEventListener("mousemove",e=>{
+  pointer = {x:e.clientX,y:e.clientY};
+});
 
-canvas.ontouchmove = e => {
+window.addEventListener("touchmove",e=>{
   const t = e.touches[0];
-  pointer = {x:t.clientX, y:t.clientY};
-};
+  pointer = {x:t.clientX,y:t.clientY};
+});
 
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   blobs.forEach(b=>{
 
-    // движение
     b.x += b.vx;
     b.y += b.vy;
 
-    b.vx += (Math.random()-0.5)*0.05;
-    b.vy += (Math.random()-0.5)*0.05;
+    b.vx += (Math.random()-0.5)*0.03;
+    b.vy += (Math.random()-0.5)*0.03;
 
     b.vx *= 0.98;
     b.vy *= 0.98;
 
-    // реакция на касание
     if(pointer){
       let dx = pointer.x - b.x;
       let dy = pointer.y - b.y;
-      let dist = Math.sqrt(dx*dx + dy*dy);
+      let d = Math.sqrt(dx*dx + dy*dy);
 
-      if(dist < 200){
+      if(d < 220){
         b.vx -= dx * 0.002;
         b.vy -= dy * 0.002;
       }
     }
 
     const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
-    g.addColorStop(0,"rgba(139,92,246,0.35)");
+    g.addColorStop(0,"rgba(139,92,246,0.40)");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle = g;
@@ -250,7 +272,7 @@ adminBtn.onclick = async ()=>{
   await fetch("/update",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({text, ms: Number(val)*mult})
+    body:JSON.stringify({text, ms:Number(val)*mult})
   });
 
   load();
