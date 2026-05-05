@@ -45,9 +45,7 @@ function updateState() {
       state.index = Math.floor(Math.random() * 2);
       state.text = variants[state.index];
       state.nextChange = now + randomInterval();
-    } else {
-      return saveState(state);
-    }
+    } else return saveState(state);
   }
 
   if (state.mode === "auto" && now >= state.nextChange) {
@@ -61,7 +59,6 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
-// API
 app.get("/state", (req, res) => {
   res.json(state);
 });
@@ -77,7 +74,6 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -105,7 +101,6 @@ canvas{
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border-radius:28px;
   padding:34px 90px;
   border:1px solid rgba(255,255,255,0.10);
@@ -120,11 +115,13 @@ h1{
   font-size:46px;
 }
 
+/* 💜 фиолетовый текст гарантирован */
 span{
   color:#a78bfa;
+  text-shadow: 0 0 18px rgba(167,139,250,0.5);
 }
 
-/* 💜 стеклянная админка */
+/* 💜 стеклянная кнопка */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -139,15 +136,11 @@ span{
 
   background: rgba(255,255,255,0.05);
   backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-
   border-radius:16px;
   border:1px solid rgba(255,255,255,0.12);
 
-  color: rgba(167,139,250,0.95);
-  text-shadow:
-    0 0 12px rgba(167,139,250,0.55),
-    0 0 24px rgba(139,92,246,0.35);
+  color:#a78bfa;
+  text-shadow: 0 0 14px rgba(167,139,250,0.6);
 }
 </style>
 </head>
@@ -170,17 +163,18 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-/* 🌊 МЕНЬШЕ ЧАСТИЦ, НО БОЛЬШЕ И МЯГЧЕ */
+/* 🌊 БОЛЬШЕ ХАОСА + МЕНЬШЕ СГРУППИРОВКИ */
 
 let blobs=[];
 
-/* крупные “массы жидкости” */
-for(let i=0;i<3;i++){
+/* крупные */
+for(let i=0;i<4;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
-    vx:0,vy:0,ax:0,ay:0,
-    r:480 + Math.random()*520
+    vx:0,vy:0,
+    ax:0,ay:0,
+    r:460 + Math.random()*520
   });
 }
 
@@ -189,8 +183,9 @@ for(let i=0;i<3;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
-    vx:0,vy:0,ax:0,ay:0,
-    r:220 + Math.random()*180
+    vx:0,vy:0,
+    ax:0,ay:0,
+    r:200 + Math.random()*180
   });
 });
 
@@ -208,7 +203,7 @@ addEventListener("touchmove",e=>{
 });
 
 function flow(x,y,t){
-  return Math.sin(x*0.0018+t)*Math.cos(y*0.0018-t);
+  return Math.sin(x*0.0017+t)*Math.cos(y*0.0017-t);
 }
 
 function draw(){
@@ -220,26 +215,43 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b=blobs[i];
 
-    /* 🌊 мягкое движение (ВОЗВРАЩЕНО МЕДЛЕННОЕ) */
-    b.vx += flow(b.x,b.y,t)*0.5;
-    b.vy += flow(b.y,b.x,t)*0.5;
+    /* 🌊 мягкое движение */
+    b.vx += flow(b.x,b.y,t)*0.45;
+    b.vy += flow(b.y,b.x,t)*0.45;
 
+    /* 👆 палец */
     let dx=p.x-b.x;
     let dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
 
     if(d<900){
-      let f=(1-d/900)*0.003;
-      b.vx+=dx*f;
-      b.vy+=dy*f;
+      let f=(1-d/900)*0.0028;
+      b.vx += dx*f;
+      b.vy += dy*f;
     }
 
-    /* лёгкий хаос */
-    b.vx += (Math.random()-0.5)*0.15;
-    b.vy += (Math.random()-0.5)*0.15;
+    /* 🔥 СИЛЬНЕЕ РАЗБРОС (ХАОС) */
+    b.vx += (Math.random()-0.5)*0.35;
+    b.vy += (Math.random()-0.5)*0.35;
 
-    b.vx*=0.94;
-    b.vy*=0.94;
+    /* ❌ ОТТАЛКИВАНИЕ (УБИРАЕТ СКУЧКОВАНИЕ) */
+    for(let j=0;j<blobs.length;j++){
+      if(i===j) continue;
+
+      let o=blobs[j];
+      let dx2=b.x-o.x;
+      let dy2=b.y-o.y;
+      let dist=Math.sqrt(dx2*dx2+dy2*dy2);
+
+      if(dist<260){
+        let k=(1-dist/260);
+        b.vx += dx2*k*0.008;
+        b.vy += dy2*k*0.008;
+      }
+    }
+
+    b.vx*=0.93;
+    b.vy*=0.93;
 
     b.x+=b.vx;
     b.y+=b.vy;
@@ -249,16 +261,16 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 💧 МЯГКИЙ ГРАДИЕНТ БЕЗ РЕЗКИХ ГРАНИЦ */
+    /* 💧 мягкая жидкость БЕЗ ЖЁСТКИХ КРАЁВ */
     let g=ctx.createRadialGradient(
       b.x,b.y,0,
       b.x,b.y,b.r
     );
 
-    g.addColorStop(0.0,"rgba(255,255,255,0.35)");
-    g.addColorStop(0.25,"rgba(167,139,250,0.28)");
-    g.addColorStop(0.55,"rgba(139,92,246,0.14)");
-    g.addColorStop(1.0,"rgba(0,0,0,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.30)");
+    g.addColorStop(0.3,"rgba(167,139,250,0.25)");
+    g.addColorStop(0.6,"rgba(139,92,246,0.10)");
+    g.addColorStop(1,"rgba(0,0,0,0)");
 
     ctx.fillStyle=g;
 
@@ -272,6 +284,7 @@ function draw(){
       0,
       Math.PI*2
     );
+
     ctx.fill();
   }
 
