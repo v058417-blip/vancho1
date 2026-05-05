@@ -101,10 +101,19 @@ canvas{
   position:fixed;
   top:0;
   left:0;
-  z-index:0;
 }
 
-/* текст поверх */
+/* 💎 стекло (как iOS) */
+.glass{
+  backdrop-filter: blur(25px) saturate(160%);
+  background: rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.12);
+  box-shadow:
+    inset 0 0 30px rgba(255,255,255,0.08),
+    0 10px 40px rgba(0,0,0,0.6);
+}
+
+/* текст */
 h1{
   position:absolute;
   top:50%;
@@ -112,21 +121,27 @@ h1{
   transform:translate(-50%,-50%);
   color:#e0e7ff;
   font-size:48px;
-  z-index:2;
+  padding:30px 50px;
+  border-radius:25px;
 }
 
 span{
   color:#a78bfa;
 }
 
+/* ❤️ кнопка */
 #adminBtn{
   position:fixed;
-  top:10px;
-  left:10px;
-  width:40px;
-  height:40px;
-  background:rgba(255,255,255,0.1);
-  z-index:3;
+  top:15px;
+  left:15px;
+  width:55px;
+  height:55px;
+  border-radius:15px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  cursor:pointer;
 }
 </style>
 </head>
@@ -134,9 +149,12 @@ span{
 <body>
 
 <canvas id="c"></canvas>
-<div id="adminBtn"></div>
 
-<h1>сейчас Ваня <span id="text">...</span></h1>
+<div id="adminBtn" class="glass">❤️</div>
+
+<h1 class="glass">
+  сейчас Ваня <span id="text">...</span>
+</h1>
 
 <script>
 const canvas = document.getElementById("c");
@@ -149,34 +167,48 @@ function resize(){
 resize();
 onresize = resize;
 
-/* 💜 ЖИВАЯ ВОДА (мягкая, переливающаяся) */
-let blobs = Array.from({length:6}, () => ({
+// 🌊 ЖИВАЯ ВОДА (реально плавная)
+let blobs = Array.from({length:7}, () => ({
   x: Math.random()*innerWidth,
   y: Math.random()*innerHeight,
-  vx:(Math.random()-0.5)*0.4,
-  vy:(Math.random()-0.5)*0.4,
-  r:200 + Math.random()*160
+  vx:(Math.random()-0.5)*0.6,
+  vy:(Math.random()-0.5)*0.6,
+  r:250 + Math.random()*150
 }));
+
+let pointer = {x:null,y:null};
 
 function animate(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   blobs.forEach(b=>{
 
-    // хаотичное движение
-    b.vx += (Math.random()-0.5)*0.02;
-    b.vy += (Math.random()-0.5)*0.02;
+    // движение
+    b.vx += (Math.random()-0.5)*0.03;
+    b.vy += (Math.random()-0.5)*0.03;
 
-    b.vx *= 0.98;
-    b.vy *= 0.98;
+    // 👆 реакция на касание (деформация)
+    if(pointer.x !== null){
+      const dx = pointer.x - b.x;
+      const dy = pointer.y - b.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      if(dist < 300){
+        b.vx += dx * 0.001;
+        b.vy += dy * 0.001;
+      }
+    }
+
+    b.vx *= 0.97;
+    b.vy *= 0.97;
 
     b.x += b.vx;
     b.y += b.vy;
 
     const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(139,92,246,0.35)");
-    g.addColorStop(0.5,"rgba(99,102,241,0.25)");
+    g.addColorStop(0,"rgba(139,92,246,0.45)");
+    g.addColorStop(0.4,"rgba(99,102,241,0.30)");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle = g;
@@ -189,7 +221,19 @@ function animate(){
 }
 animate();
 
-/* текст */
+// 👆 мышь / тач
+window.addEventListener("mousemove",e=>{
+  pointer.x = e.clientX;
+  pointer.y = e.clientY;
+});
+
+window.addEventListener("touchmove",e=>{
+  const t = e.touches[0];
+  pointer.x = t.clientX;
+  pointer.y = t.clientY;
+});
+
+// текст
 async function load(){
   const r = await fetch("/state");
   const d = await r.json();
@@ -198,14 +242,14 @@ async function load(){
 load();
 setInterval(load,1000);
 
-/* админка */
+// админка
 adminBtn.onclick = async ()=>{
   const pass = prompt("пароль");
   if(pass !== "4724") return;
 
   const text = prompt("текст");
 
-  const choice = prompt("1 - секунды\\n2 - минуты\\n3 - часы");
+  const choice = prompt("1 - сек\\n2 - мин\\n3 - часы");
 
   let mult = 1000;
   if(choice === "2") mult = 60000;
