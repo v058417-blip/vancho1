@@ -61,7 +61,6 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
-// API
 app.get("/state", (req, res) => {
   res.json(state);
 });
@@ -77,7 +76,8 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-// FRONT
+/* ================= FRONT ================= */
+
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -110,7 +110,6 @@ canvas{
   border-radius:28px;
   padding:34px 90px;
   border:1px solid rgba(255,255,255,0.10);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
 }
 
 h1{
@@ -121,7 +120,6 @@ h1{
   color:#e0e7ff;
   font-size:46px;
   z-index:2;
-  text-shadow: 0 0 20px rgba(139,92,246,0.25);
 }
 
 span{ color:#a78bfa; }
@@ -137,7 +135,6 @@ span{ color:#a78bfa; }
   justify-content:center;
   font-size:22px;
   cursor:pointer;
-
   background: rgba(255,255,255,0.05);
   backdrop-filter: blur(18px);
   border:1px solid rgba(255,255,255,0.12);
@@ -151,7 +148,6 @@ span{ color:#a78bfa; }
 <body>
 
 <canvas id="c"></canvas>
-
 <div id="adminBtn">❤️</div>
 
 <h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
@@ -167,10 +163,11 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
-/* 🌊 БЛОБЫ */
+/* ================= FLUID CHAOS ================= */
+
 let blobs = [];
 
-/* большие */
+/* крупные */
 for(let i=0;i<3;i++){
   blobs.push({
     x:Math.random()*innerWidth,
@@ -182,24 +179,24 @@ for(let i=0;i<3;i++){
 }
 
 /* средние */
-for(let i=0;i<5;i++){
-  blobs.push({
-    x:Math.random()*innerWidth,
-    y:Math.random()*innerHeight,
-    vx:0,vy:0,
-    ax:0,ay:0,
-    r:140 + Math.random()*160
-  });
-}
-
-/* мелкие */
 for(let i=0;i<6;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
     vx:0,vy:0,
     ax:0,ay:0,
-    r:25 + Math.random()*60
+    r:120 + Math.random()*180
+  });
+}
+
+/* мелкие */
+for(let i=0;i<8;i++){
+  blobs.push({
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight,
+    vx:0,vy:0,
+    ax:0,ay:0,
+    r:20 + Math.random()*60
   });
 }
 
@@ -211,77 +208,80 @@ addEventListener("mousemove",e=>{
 });
 
 addEventListener("touchmove",e=>{
-  const t=e.touches[0];
+  let t=e.touches[0];
   p.x=t.clientX;
   p.y=t.clientY;
 });
 
-/* ================= WATER ================= */
+/* ================= CHAOS FLUID ================= */
+
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.globalCompositeOperation="lighter";
 
   for(let i=0;i<blobs.length;i++){
-    let b = blobs[i];
+    let b=blobs[i];
 
-    let dx = p.x - b.x;
-    let dy = p.y - b.y;
-    let dist = Math.sqrt(dx*dx + dy*dy);
+    let dx=p.x-b.x;
+    let dy=p.y-b.y;
+    let dist=Math.sqrt(dx*dx+dy*dy);
 
-    /* 🌊 мягкое притяжение */
-    if(dist < 950){
-      let f = (1 - dist/950) * 0.006;
-      b.ax += dx * f;
-      b.ay += dy * f;
+    /* мягкое следование */
+    if(dist<900){
+      let f=(1-dist/900)*0.004;
+      b.ax+=dx*f;
+      b.ay+=dy*f;
     }
 
-    /* хаотичное движение */
-    b.ax += Math.sin(Date.now()*0.001 + i) * 0.003;
-    b.ay += Math.cos(Date.now()*0.001 + i) * 0.003;
+    /* турбулентность (хаос жидкости) */
+    b.ax+=Math.sin(Date.now()*0.001+i)*0.006;
+    b.ay+=Math.cos(Date.now()*0.001+i)*0.006;
 
-    /* 🌐 СЛИЯНИЕ + РАЗЛИПАНИЕ (главное исправление) */
+    /* взаимодействие: ПРИБЛИЖЕНИЕ + РАЗЛЁТ */
     for(let j=0;j<blobs.length;j++){
       if(i===j) continue;
 
-      let o = blobs[j];
-      let dx2 = o.x - b.x;
-      let dy2 = o.y - b.y;
-      let d2 = Math.sqrt(dx2*dx2 + dy2*dy2);
+      let o=blobs[j];
+      let dx2=o.x-b.x;
+      let dy2=o.y-b.y;
+      let d2=Math.sqrt(dx2*dx2+dy2*dy2);
 
-      if(d2 < 520){
-        let k = (1 - d2/520);
+      if(d2<500){
+        let k=(1-d2/500);
 
-        /* ✨ эффект СЛИЯНИЯ (свет в центре) */
-        b.ax += dx2 * k * 0.0025;
-        b.ay += dy2 * k * 0.0025;
+        /* краткое “слияние” */
+        b.ax+=dx2*k*0.002;
 
-        /* ❌ разлипание (чтобы не слипались навсегда) */
-        b.ax -= dx2 * k * 0.0022;
-        b.ay -= dy2 * k * 0.0022;
+        /* мгновенное разъединение */
+        b.ax-=dx2*k*0.003;
+        b.ay-=dy2*k*0.003;
+
+        /* хаотический отскок */
+        b.ax+=(Math.random()-0.5)*k*0.01;
+        b.ay+=(Math.random()-0.5)*k*0.01;
       }
     }
 
-    /* 🧈 инерция */
-    b.vx = (b.vx + b.ax) * 0.88;
-    b.vy = (b.vy + b.ay) * 0.88;
+    /* инерция жидкости */
+    b.vx=(b.vx+b.ax)*0.9;
+    b.vy=(b.vy+b.ay)*0.9;
 
-    b.x += b.vx;
-    b.y += b.vy;
+    b.x+=b.vx;
+    b.y+=b.vy;
 
-    b.ax *= 0.5;
-    b.ay *= 0.5;
+    b.ax*=0.5;
+    b.ay*=0.5;
 
-    /* 💧 ЖИВОЕ СИЯНИЕ (без контуров) */
-    let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    /* мягкое свечение без контуров */
+    let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    let a = b.r > 300 ? 0.45 : b.r > 100 ? 0.25 : 0.12;
+    let a=b.r>300?0.45:b.r>100?0.25:0.12;
 
-    g.addColorStop(0,"rgba(255,255,255,"+a+")"); // 💡 центр слияния
-    g.addColorStop(0.3,"rgba(167,139,250,"+(a*0.8)+")");
-    g.addColorStop(0.7,"rgba(139,92,246,"+(a*0.5)+")");
+    g.addColorStop(0,"rgba(255,255,255,"+a+")");
+    g.addColorStop(0.3,"rgba(167,139,250,"+(a*0.7)+")");
     g.addColorStop(1,"transparent");
 
-    ctx.fillStyle = g;
+    ctx.fillStyle=g;
 
     ctx.beginPath();
     ctx.ellipse(
@@ -289,7 +289,7 @@ function draw(){
       b.y,
       b.r,
       b.r*0.75,
-      Math.sin(i + Date.now()*0.001)*0.2,
+      Math.sin(i+Date.now()*0.001)*0.2,
       0,
       Math.PI*2
     );
@@ -303,26 +303,26 @@ draw();
 
 /* TEXT */
 async function load(){
-  const r = await fetch("/state");
-  const d = await r.json();
-  document.getElementById("text").textContent = d.text;
+  let r=await fetch("/state");
+  let d=await r.json();
+  document.getElementById("text").textContent=d.text;
 }
 load();
 setInterval(load,1000);
 
 /* ADMIN */
 adminBtn.onclick=async()=>{
-  const pass=prompt("пароль");
+  let pass=prompt("пароль");
   if(pass!=="4724")return;
 
-  const text=prompt("текст");
-  const type=prompt("1-сек 2-мин 3-час");
+  let text=prompt("текст");
+  let type=prompt("1-сек 2-мин 3-час");
 
   let mult=1000;
   if(type==="2")mult=60000;
   if(type==="3")mult=3600000;
 
-  const val=prompt("число");
+  let val=prompt("число");
 
   await fetch("/update",{
     method:"POST",
@@ -336,7 +336,7 @@ adminBtn.onclick=async()=>{
 
 </body>
 </html>
-  `);
+`);
 });
 
 app.listen(3000, () => console.log("RUNNING"));
