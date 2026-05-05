@@ -105,7 +105,7 @@ canvas{
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  width:min(88vw,1000px); /* ← уменьшено аккуратно */
+  width:min(88vw,1000px);
   padding:34px 80px;
 
   background: rgba(255,255,255,0.06);
@@ -195,6 +195,18 @@ function flow(x,y,t){
   return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
 }
 
+// 💧 мягкие края БЕЗ wrap
+function boundaryForce(b){
+  let margin = 120;
+  let strength = 0.003;
+
+  if(b.x < margin) b.ax += (margin - b.x) * strength;
+  if(b.x > innerWidth - margin) b.ax -= (b.x - (innerWidth - margin)) * strength;
+
+  if(b.y < margin) b.ay += (margin - b.y) * strength;
+  if(b.y > innerHeight - margin) b.ay -= (b.y - (innerHeight - margin)) * strength;
+}
+
 function draw(){
   ctx.clearRect(0,0,c.width,c.height);
   ctx.globalCompositeOperation = "lighter";
@@ -232,6 +244,9 @@ function draw(){
       }
     }
 
+    // 👉 КЛЮЧ: мягкие границы вместо wrap
+    boundaryForce(b);
+
     b.vx = (b.vx + b.ax) * 0.9;
     b.vy = (b.vy + b.ay) * 0.9;
 
@@ -240,12 +255,6 @@ function draw(){
 
     b.ax *= 0.5;
     b.ay *= 0.5;
-
-    // 👉 НОРМАЛЬНЫЙ wrap без артефактов
-    if(b.x < 0) b.x = innerWidth;
-    if(b.x > innerWidth) b.x = 0;
-    if(b.y < 0) b.y = innerHeight;
-    if(b.y > innerHeight) b.y = 0;
 
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
