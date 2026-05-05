@@ -100,22 +100,22 @@ canvas{
   inset:0;
 }
 
-/* 📦 ТАБЛИЧКА (УМЕНЬШЕНА) */
+/* 📦 ТАБЛИЧКА (уменьшена + воздух по краям) */
 .glass{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
 
-  width:82vw;            /* ↓ было 90vw */
-  max-width:980px;       /* ↓ было 1100px */
+  width:76vw;           /* ↓ БЫЛО 82vw → стало меньше */
+  max-width:900px;
 
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(18px);
 
   border-radius:34px;
 
-  padding:70px 90px;     /* чуть компактнее */
+  padding:78px 100px;
 
   border:1px solid rgba(255,255,255,0.10);
 
@@ -126,7 +126,8 @@ canvas{
 h1{
   margin:0;
   color:#e0e7ff;
-  font-size: clamp(50px, 4.8vw, 76px);
+
+  font-size: clamp(54px, 5vw, 80px); /* ↑ немного увеличен */
   line-height:1.1;
 }
 
@@ -134,7 +135,7 @@ span{
   color:#a78bfa;
 }
 
-/* ❤️ админка */
+/* ❤️ админка (без изменений) */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -179,7 +180,7 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-/* 🌊 ЛЮБИМАЯ ФИЗИКА (ВОЗВРАЩЕНА) */
+/* 🌊 ФИЗИКА ВОДЫ — НЕ ИЗМЕНЯЛАСЬ (твоя любимая) */
 let blobs=[];
 
 for(let i=0;i<10;i++){
@@ -220,11 +221,9 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b=blobs[i];
 
-    // 🌪 вихрь
     b.ax += flow(b.x,b.y,t)*0.4;
     b.ay += flow(b.y,b.x,t)*0.4;
 
-    // 👆 палец
     let dx=p.x-b.x;
     let dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
@@ -235,7 +234,6 @@ function draw(){
       b.ay+=dy*f;
     }
 
-    // 🧠 вязкость
     b.vx=(b.vx+b.ax)*0.9;
     b.vy=(b.vy+b.ay)*0.9;
 
@@ -245,13 +243,11 @@ function draw(){
     b.ax*=0.5;
     b.ay*=0.5;
 
-    // wrap
     if(b.x<0)b.x=innerWidth;
     if(b.x>innerWidth)b.x=0;
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    // 💜 мягкий градиент (как раньше)
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
     g.addColorStop(0,"rgba(255,255,255,0.30)");
@@ -267,7 +263,7 @@ function draw(){
       b.y,
       b.r,
       b.r*0.75,
-      Math.sin(i+t)*0.2,
+      Math.sin(i+ t)*0.2,
       0,
       Math.PI*2
     );
@@ -314,6 +310,7 @@ adminBtn.onclick=async()=>{
 </body>
 </html>
 `);
+
 });
 
 app.listen(3000, () => console.log("RUNNING"));
