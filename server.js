@@ -100,44 +100,59 @@ canvas{
   inset:0;
 }
 
+/* 📦 УВЕЛИЧЕННАЯ ТАБЛИЧКА */
 .glass{
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(16px);
-  border-radius:28px;
-  padding:34px 90px;
-  border:1px solid rgba(255,255,255,0.10);
-}
-
-h1{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  color:#e0e7ff;
-  font-size:46px;
+
+  width: calc(100% - 80px); /* ~1cm+ отступ с каждой стороны */
+  max-width: 900px;
+
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px);
+  border-radius:32px;
+
+  padding:70px 100px; /* ×2 примерно */
+
+  border:1px solid rgba(255,255,255,0.10);
+
+  text-align:center;
 }
 
-span{ color:#a78bfa; }
+/* текст */
+h1{
+  margin:0;
+  color:#e0e7ff;
+  font-size:56px;
+}
 
-/* ❤️ ФИОЛЕТОВОЕ СТЕКЛО */
+span{
+  color:#a78bfa;
+}
+
+/* ❤️ стеклянная кнопка */
 #adminBtn{
   position:fixed;
   top:15px;
   left:15px;
   width:56px;
   height:56px;
+
   display:flex;
   align-items:center;
   justify-content:center;
+
   font-size:22px;
   cursor:pointer;
 
-  background: rgba(167,139,250,0.15);
+  background: rgba(167,139,250,0.18);
   backdrop-filter: blur(18px);
   border-radius:16px;
+
   border:1px solid rgba(167,139,250,0.35);
-  color:#a78bfa;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  color:#c4b5fd;
 }
 </style>
 </head>
@@ -147,117 +162,98 @@ span{ color:#a78bfa; }
 <canvas id="c"></canvas>
 <div id="adminBtn">❤️</div>
 
-<h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
+<div class="glass">
+  <h1>сейчас Ваня <span id="text">...</span></h1>
+</div>
 
 <script>
-const c = document.getElementById("c");
-const ctx = c.getContext("2d");
+const c=document.getElementById("c");
+const ctx=c.getContext("2d");
 
 function resize(){
-  c.width = innerWidth;
-  c.height = innerHeight;
+  c.width=innerWidth;
+  c.height=innerHeight;
 }
 resize();
-addEventListener("resize", resize);
+addEventListener("resize",resize);
 
-// 🌊 БАЛАНС: меньше объектов, но крупнее
-let blobs = [];
+// 🌊 жидкость
+let blobs=[];
 
 for(let i=0;i<10;i++){
   blobs.push({
-    x: Math.random()*innerWidth,
-    y: Math.random()*innerHeight,
-    vx: (Math.random()-0.5)*1.2,
-    vy: (Math.random()-0.5)*1.2,
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight,
+    vx:(Math.random()-0.5)*1.2,
+    vy:(Math.random()-0.5)*1.2,
     ax:0,
     ay:0,
-    r: 180 + Math.random()*320
+    r:180 + Math.random()*320
   });
 }
 
-let p = {x:innerWidth/2, y:innerHeight/2};
+let p={x:innerWidth/2,y:innerHeight/2};
 
-addEventListener("mousemove", e=>{
-  p.x = e.clientX;
-  p.y = e.clientY;
+addEventListener("mousemove",e=>{
+  p.x=e.clientX;
+  p.y=e.clientY;
 });
 
-addEventListener("touchmove", e=>{
-  let t = e.touches[0];
-  p.x = t.clientX;
-  p.y = t.clientY;
+addEventListener("touchmove",e=>{
+  let t=e.touches[0];
+  p.x=t.clientX;
+  p.y=t.clientY;
 });
 
-// 🌪 мягкий хаос
 function flow(x,y,t){
   return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
 }
 
 function draw(){
   ctx.clearRect(0,0,c.width,c.height);
-  ctx.globalCompositeOperation = "lighter";
+  ctx.globalCompositeOperation="lighter";
 
-  let t = Date.now()*0.001;
+  let t=Date.now()*0.001;
 
   for(let i=0;i<blobs.length;i++){
-    let b = blobs[i];
+    let b=blobs[i];
 
-    // хаотичное поле
     b.ax += flow(b.x,b.y,t)*0.4;
     b.ay += flow(b.y,b.x,t)*0.4;
 
-    // палец (мягко)
-    let dx = p.x - b.x;
-    let dy = p.y - b.y;
-    let d = Math.sqrt(dx*dx+dy*dy);
+    let dx=p.x-b.x;
+    let dy=p.y-b.y;
+    let d=Math.sqrt(dx*dx+dy*dy);
 
-    if(d < 900){
-      let f = (1 - d/900)*0.002;
-      b.ax += dx*f;
-      b.ay += dy*f;
+    if(d<900){
+      let f=(1-d/900)*0.002;
+      b.ax+=dx*f;
+      b.ay+=dy*f;
     }
 
-    // анти-слипание (ключ)
-    for(let j=0;j<blobs.length;j++){
-      if(i===j) continue;
+    b.vx=(b.vx+b.ax)*0.9;
+    b.vy=(b.vy+b.ay)*0.9;
 
-      let o = blobs[j];
-      let dx2 = b.x - o.x;
-      let dy2 = b.y - o.y;
-      let dist = Math.sqrt(dx2*dx2 + dy2*dy2);
+    b.x+=b.vx;
+    b.y+=b.vy;
 
-      if(dist < 260){
-        let k = (1 - dist/260);
+    b.ax*=0.5;
+    b.ay*=0.5;
 
-        b.ax += dx2 * k * 0.02;
-        b.ay += dy2 * k * 0.02;
-      }
-    }
-
-    // трение
-    b.vx = (b.vx + b.ax) * 0.9;
-    b.vy = (b.vy + b.ay) * 0.9;
-
-    b.x += b.vx;
-    b.y += b.vy;
-
-    b.ax *= 0.5;
-    b.ay *= 0.5;
-
-    // wrap
     if(b.x<0)b.x=innerWidth;
     if(b.x>innerWidth)b.x=0;
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    // 💜 мягкая вода БЕЗ границ
-    let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    // 💜 ОБНОВЛЁННЫЙ ГРАДИЕНТ
+    let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.22)");
-    g.addColorStop(0.4,"rgba(167,139,250,0.18)");
-    g.addColorStop(1,"rgba(0,0,0,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.28)");
+    g.addColorStop(0.25,"rgba(167,139,250,0.20)");
+    g.addColorStop(0.6,"rgba(139,92,246,0.14)");
+    g.addColorStop(1,"rgba(30,27,75,0)");
 
-    ctx.fillStyle = g;
+    ctx.fillStyle=g;
 
     ctx.beginPath();
     ctx.ellipse(
@@ -278,31 +274,31 @@ draw();
 
 // TEXT
 async function load(){
-  let r = await fetch("/state");
-  let d = await r.json();
-  document.getElementById("text").textContent = d.text;
+  let r=await fetch("/state");
+  let d=await r.json();
+  document.getElementById("text").textContent=d.text;
 }
 load();
 setInterval(load,1000);
 
 // ADMIN
-adminBtn.onclick = async ()=>{
-  let pass = prompt("пароль");
-  if(pass !== "4724") return;
+adminBtn.onclick=async()=>{
+  let pass=prompt("пароль");
+  if(pass!=="4724")return;
 
-  let text = prompt("текст");
-  let type = prompt("1-сек 2-мин 3-час");
+  let text=prompt("текст");
+  let type=prompt("1-сек 2-мин 3-час");
 
-  let mult = 1000;
-  if(type==="2") mult=60000;
-  if(type==="3") mult=3600000;
+  let mult=1000;
+  if(type==="2")mult=60000;
+  if(type==="3")mult=3600000;
 
-  let val = prompt("число");
+  let val=prompt("число");
 
   await fetch("/update",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({text, ms:Number(val)*mult})
+    body:JSON.stringify({text,ms:Number(val)*mult})
   });
 
   load();
