@@ -38,7 +38,7 @@ function saveState(s) {
   fs.writeFileSync(FILE, JSON.stringify(s));
 }
 
-let state = createFreshState();
+let state = loadState();
 
 function updateState() {
   const now = Date.now();
