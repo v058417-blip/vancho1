@@ -160,7 +160,8 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-/* 🌊 ЛЮБИМАЯ ФИЗИКА (ВОССТАНОВЛЕНА) */
+/* 🌊 ЛЮБИМАЯ ФИЗИКА (ВОЗВРАЩЕНА 1:1) */
+
 let blobs=[];
 
 for(let i=0;i<10;i++){
@@ -201,11 +202,9 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b=blobs[i];
 
-    // базовый поток (хаос)
     b.ax += flow(b.x,b.y,t)*0.4;
     b.ay += flow(b.y,b.x,t)*0.4;
 
-    // палец (мягкое притяжение)
     let dx=p.x-b.x;
     let dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
@@ -215,9 +214,6 @@ function draw(){
       b.ax+=dx*f;
       b.ay+=dy*f;
     }
-
-    // ❗ ВАЖНО: убрали взаимное "слипание"
-    // (оно раньше ломало всё и тянуло в центр)
 
     b.vx=(b.vx+b.ax)*0.9;
     b.vy=(b.vy+b.ay)*0.9;
@@ -233,10 +229,10 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 🌈 МЯГКОЕ ПЕРЕЛИВАНИЕ (без “пятен”) */
+    /* 🎨 ТОЛЬКО ВИЗУАЛ (НЕ ФИЗИКА) */
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.20)");
+    g.addColorStop(0,"rgba(255,255,255,0.22)");
     g.addColorStop(0.3,"rgba(199,210,254,0.28)");
     g.addColorStop(0.6,"rgba(167,139,250,0.22)");
     g.addColorStop(1,"rgba(0,0,0,0)");
