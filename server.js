@@ -61,23 +61,8 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
-// API
-app.get("/state", (req, res) => {
-  res.json(state);
-});
+/* ================= FRONT ================= */
 
-app.post("/update", (req, res) => {
-  const { text, ms } = req.body;
-
-  state.mode = "manual";
-  state.text = text;
-  state.until = Date.now() + ms;
-
-  saveState(state);
-  res.json({ ok: true });
-});
-
-// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -167,17 +152,17 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
-/* 🌊 СБАЛАНСИРОВАННЫЕ МАССЫ */
+/* 🌊 СБАЛАНСИРОВАННЫЕ ЖИДКИЕ МАССЫ */
 let blobs = [];
 
-/* 💜 ОГРОМНЫЕ (¼ экрана) */
+/* 🔥 большие (почти 1/4 экрана) */
 for(let i=0;i<3;i++){
   blobs.push({
     x: Math.random()*innerWidth,
     y: Math.random()*innerHeight,
     vx:0, vy:0,
     ax:0, ay:0,
-    r: 350 + Math.random()*420   // 🔥 реально огромные
+    r: 380 + Math.random()*450
   });
 }
 
@@ -216,10 +201,10 @@ addEventListener("touchmove",e=>{
   pointer.y=t.clientY;
 });
 
-/* 🌊 МЯГКАЯ ФИЗИКА */
+/* ================= WATER ================= */
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.globalCompositeOperation="lighter";
+  ctx.globalCompositeOperation = "lighter";
 
   for(let i=0;i<blobs.length;i++){
     let b = blobs[i];
@@ -228,45 +213,67 @@ function draw(){
     let dy = pointer.y - b.y;
     let dist = Math.sqrt(dx*dx + dy*dy);
 
-    /* 👇 МЯГКОЕ ПРИТЯЖЕНИЕ (исправлено) */
-    if(dist < 900){
-      let force = (1 - dist/900) * 0.008; // 🔥 сильно ослаблено
-      b.ax += dx * force;
-      b.ay += dy * force;
+    /* 🌊 МЯГКОЕ притяжение */
+    if(dist < 950){
+      let f = (1 - dist/950) * 0.006;
+      b.ax += dx * f;
+      b.ay += dy * f;
     }
 
-    /* 🌊 лёгкое самодвижение */
-    b.ax += Math.sin(Date.now()*0.0008 + i)*0.004;
-    b.ay += Math.cos(Date.now()*0.0008 + i)*0.004;
+    /* 🌫 внутреннее движение */
+    b.ax += Math.sin(Date.now()*0.0008 + i) * 0.003;
+    b.ay += Math.cos(Date.now()*0.0008 + i) * 0.003;
 
-    /* 🧈 инерция */
-    b.vx = (b.vx + b.ax) * 0.88;
-    b.vy = (b.vy + b.ay) * 0.88;
+    /* 🌐 взаимодействие (слияние + разлив) */
+    for(let j=0;j<blobs.length;j++){
+      if(i===j) continue;
+
+      let o = blobs[j];
+      let dx2 = o.x - b.x;
+      let dy2 = o.y - b.y;
+      let d2 = Math.sqrt(dx2*dx2 + dy2*dy2);
+
+      if(d2 < 520){
+        let k = (1 - d2/520);
+
+        /* ✔ притяжение (эффект слияния) */
+        b.ax += dx2 * k * 0.0022;
+
+        /* ❌ разлив (чтобы не залипали) */
+        b.ax -= dx2 * k * 0.0018;
+        b.ay -= dy2 * k * 0.0018;
+      }
+    }
+
+    /* 🧈 жидкость */
+    b.vx = (b.vx + b.ax) * 0.87;
+    b.vy = (b.vy + b.ay) * 0.87;
 
     b.x += b.vx;
     b.y += b.vy;
 
-    b.ax *= 0.4;
-    b.ay *= 0.4;
+    b.ax *= 0.45;
+    b.ay *= 0.45;
 
-    /* 💧 мягкое сияние */
+    /* 💧 СИЯНИЕ БЕЗ КОНТУРОВ */
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    let alpha = b.r > 300 ? 0.45 : b.r > 100 ? 0.25 : 0.12;
+    let a = b.r > 300 ? 0.45 : b.r > 100 ? 0.25 : 0.12;
 
-    g.addColorStop(0,`rgba(167,139,250,${alpha})`);
-    g.addColorStop(0.5,`rgba(139,92,246,${alpha*0.5})`);
+    g.addColorStop(0,"rgba(255,255,255," + a + ")");
+    g.addColorStop(0.25,"rgba(167,139,250," + a + ")");
+    g.addColorStop(0.6,"rgba(139,92,246," + (a*0.6) + ")");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle = g;
-    ctx.beginPath();
 
+    ctx.beginPath();
     ctx.ellipse(
       b.x,
       b.y,
       b.r,
       b.r*0.75,
-      Math.sin(i + Date.now()*0.001)*0.3,
+      Math.sin(i + Date.now()*0.001)*0.25,
       0,
       Math.PI*2
     );
@@ -313,7 +320,7 @@ adminBtn.onclick=async()=>{
 
 </body>
 </html>
-`);
+  `);
 });
 
 app.listen(3000, () => console.log("RUNNING"));
