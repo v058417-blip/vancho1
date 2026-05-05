@@ -164,7 +164,8 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-/* 🌊 ФИЗИКА НЕ ИЗМЕНЕНА */
+/* 🌊 ФИЗИКА — ВОССТАНОВЛЕНА (НЕ МЕНЯЛАСЬ) */
+
 let blobs=[];
 
 for(let i=0;i<10;i++){
@@ -232,13 +233,13 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 🌈 ИЗМЕНЁН ТОЛЬКО ГРАДИЕНТ */
+    /* 🌈 ИЗМЕНЕНО ТОЛЬКО ОФОРМЛЕНИЕ ГРАДИЕНТА */
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.22)");
-    g.addColorStop(0.25,"rgba(196,181,253,0.35)");
-    g.addColorStop(0.55,"rgba(139,92,246,0.28)");
-    g.addColorStop(0.8,"rgba(99,102,241,0.15)");
+    g.addColorStop(0,"rgba(255,255,255,0.25)");
+    g.addColorStop(0.25,"rgba(199,210,254,0.35)");
+    g.addColorStop(0.55,"rgba(167,139,250,0.30)");
+    g.addColorStop(0.8,"rgba(124,58,237,0.18)");
     g.addColorStop(1,"rgba(0,0,0,0)");
 
     ctx.fillStyle=g;
