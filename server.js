@@ -51,7 +51,7 @@ function updateState() {
   if (state.mode === "auto" && now >= state.nextChange) {
     state.index = state.index === 0 ? 1 : 0;
     state.text = variants[state.index];
-    state.nextChange = now + randomInterval();
+    state.nextChange = randomInterval();
   }
 
   saveState(state);
@@ -118,10 +118,10 @@ h1{
 
 span{
   color:#a78bfa;
-  text-shadow: 0 0 18px rgba(167,139,250,0.45);
+  text-shadow: 0 0 16px rgba(167,139,250,0.45);
 }
 
-/* 💜 админка — стабильное сердце */
+/* 💜 админка (стабильная) */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -140,7 +140,7 @@ span{
   border:1px solid rgba(255,255,255,0.12);
 
   color:#c4b5fd;
-  text-shadow: 0 0 14px rgba(196,181,253,0.8);
+  text-shadow: 0 0 14px rgba(196,181,253,0.7);
 }
 </style>
 </head>
@@ -163,7 +163,7 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
-/* 🌊 СТАБИЛЬНАЯ СИСТЕМА (БЕЗ ЛОМАНИЯ) */
+/* 🌊 СТАБИЛЬНАЯ ВЕРСИЯ ВОДЫ (ВОЗВРАТ) */
 
 let blobs = [];
 
@@ -174,7 +174,7 @@ for(let i=0;i<3;i++){
     y: Math.random()*innerHeight,
     vx: 0,
     vy: 0,
-    r: 520 + Math.random()*450
+    r: 520 + Math.random()*400
   });
 }
 
@@ -185,7 +185,7 @@ for(let i=0;i<2;i++){
     y: Math.random()*innerHeight,
     vx: 0,
     vy: 0,
-    r: 240 + Math.random()*160
+    r: 240 + Math.random()*180
   });
 });
 
@@ -203,7 +203,7 @@ addEventListener("touchmove", e=>{
 });
 
 function flow(x,y,t){
-  return Math.sin(x*0.0014 + t) * Math.cos(y*0.0014 - t);
+  return Math.sin(x*0.0013 + t) * Math.cos(y*0.0013 - t);
 }
 
 function draw(){
@@ -212,14 +212,13 @@ function draw(){
 
   let t = Date.now()*0.001;
 
-  for(let i=0;i<blobs.length;i++){
-    let b = blobs[i];
+  for(let b of blobs){
 
-    /* мягкое движение */
-    b.vx += flow(b.x,b.y,t)*0.25;
-    b.vy += flow(b.y,b.x,t)*0.25;
+    /* 🌊 плавное движение (НЕ ЛОМАЕТСЯ) */
+    b.vx += flow(b.x,b.y,t)*0.22;
+    b.vy += flow(b.y,b.x,t)*0.22;
 
-    /* палец */
+    /* 👆 палец */
     let dx = p.x - b.x;
     let dy = p.y - b.y;
     let d = Math.sqrt(dx*dx + dy*dy);
@@ -230,27 +229,25 @@ function draw(){
       b.vy += dy*f;
     }
 
-    /* лёгкий хаос (НЕ ломает систему) */
-    b.vx += (Math.random()-0.5)*0.08;
-    b.vy += (Math.random()-0.5)*0.08;
+    /* мягкий шум */
+    b.vx += (Math.random()-0.5)*0.05;
+    b.vy += (Math.random()-0.5)*0.05;
 
-    /* сглаживание */
-    b.vx *= 0.96;
-    b.vy *= 0.96;
+    b.vx *= 0.97;
+    b.vy *= 0.97;
 
     b.x += b.vx;
     b.y += b.vy;
 
-    /* wrap */
-    if(b.x < 0) b.x = innerWidth;
-    if(b.x > innerWidth) b.x = 0;
-    if(b.y < 0) b.y = innerHeight;
-    if(b.y > innerHeight) b.y = 0;
+    if(b.x<0)b.x=innerWidth;
+    if(b.x>innerWidth)b.x=0;
+    if(b.y<0)b.y=innerHeight;
+    if(b.y>innerHeight)b.y=0;
 
-    /* 💧 мягкая жидкость без жёстких краёв */
+    /* 💧 мягкая вода (без резких краёв) */
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.30)");
+    g.addColorStop(0,"rgba(255,255,255,0.28)");
     g.addColorStop(0.4,"rgba(167,139,250,0.20)");
     g.addColorStop(1,"rgba(0,0,0,0)");
 
