@@ -100,14 +100,11 @@ canvas{
   inset:0;
 }
 
-/* 📦 уже + больше воздуха */
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
   border-radius:28px;
-
-  padding:34px 120px; /* чуть уже чем было */
-
+  padding:34px 90px;
   border:1px solid rgba(255,255,255,0.10);
 }
 
@@ -117,15 +114,12 @@ h1{
   left:50%;
   transform:translate(-50%,-50%);
   color:#e0e7ff;
-  font-size:69px;
-
-  text-align:left;
-  width: 85%;        /* воздух по краям */
-  max-width: 1000px;  /* ограничение, чтобы не расползалось */
+  font-size:46px;
 }
 
 span{ color:#a78bfa; }
 
+/* ❤️ ФИОЛЕТОВОЕ СТЕКЛО */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -166,6 +160,7 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
+// 🌊 БАЛАНС: меньше объектов, но крупнее
 let blobs = [];
 
 for(let i=0;i<10;i++){
@@ -193,6 +188,7 @@ addEventListener("touchmove", e=>{
   p.y = t.clientY;
 });
 
+// 🌪 мягкий хаос
 function flow(x,y,t){
   return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
 }
@@ -206,9 +202,11 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b = blobs[i];
 
+    // хаотичное поле
     b.ax += flow(b.x,b.y,t)*0.4;
     b.ay += flow(b.y,b.x,t)*0.4;
 
+    // палец (мягко)
     let dx = p.x - b.x;
     let dy = p.y - b.y;
     let d = Math.sqrt(dx*dx+dy*dy);
@@ -219,6 +217,7 @@ function draw(){
       b.ay += dy*f;
     }
 
+    // анти-слипание (ключ)
     for(let j=0;j<blobs.length;j++){
       if(i===j) continue;
 
@@ -229,11 +228,13 @@ function draw(){
 
       if(dist < 260){
         let k = (1 - dist/260);
+
         b.ax += dx2 * k * 0.02;
         b.ay += dy2 * k * 0.02;
       }
     }
 
+    // трение
     b.vx = (b.vx + b.ax) * 0.9;
     b.vy = (b.vy + b.ay) * 0.9;
 
@@ -243,19 +244,18 @@ function draw(){
     b.ax *= 0.5;
     b.ay *= 0.5;
 
+    // wrap
     if(b.x<0)b.x=innerWidth;
     if(b.x>innerWidth)b.x=0;
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 🌊 ПЕРЕРАБОТАННЫЙ ГРАДИЕНТ (без резкой границы) */
+    // 💜 мягкая вода БЕЗ границ
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.35)");
-    g.addColorStop(0.2,"rgba(255,255,255,0.22)");
-    g.addColorStop(0.45,"rgba(170,130,255,0.25)");
-    g.addColorStop(0.7,"rgba(90,60,200,0.12)");
-    g.addColorStop(1,"rgba(5,8,22,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.22)");
+    g.addColorStop(0.4,"rgba(167,139,250,0.18)");
+    g.addColorStop(1,"rgba(0,0,0,0)");
 
     ctx.fillStyle = g;
 
@@ -276,6 +276,7 @@ function draw(){
 }
 draw();
 
+// TEXT
 async function load(){
   let r = await fetch("/state");
   let d = await r.json();
@@ -284,6 +285,7 @@ async function load(){
 load();
 setInterval(load,1000);
 
+// ADMIN
 adminBtn.onclick = async ()=>{
   let pass = prompt("пароль");
   if(pass !== "4724") return;
@@ -310,6 +312,7 @@ adminBtn.onclick = async ()=>{
 </body>
 </html>
 `);
+
 });
 
 app.listen(3000, () => console.log("RUNNING"));
