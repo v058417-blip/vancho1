@@ -13,6 +13,7 @@ function randomInterval() {
   return 60000 + Math.random() * (3 * 24 * 60 * 60 * 1000);
 }
 
+/* ===== STATE ===== */
 function loadState() {
   try {
     return JSON.parse(fs.readFileSync(FILE, "utf8"));
@@ -36,6 +37,7 @@ function saveState(s) {
 
 let state = loadState();
 
+/* ===== LOGIC (СТАБИЛЬНАЯ) ===== */
 function updateState() {
   const now = Date.now();
 
@@ -45,15 +47,13 @@ function updateState() {
       state.index = Math.floor(Math.random() * 2);
       state.text = variants[state.index];
       state.nextChange = now + randomInterval();
-    } else {
-      return saveState(state);
     }
   }
 
   if (state.mode === "auto" && now >= state.nextChange) {
     state.index = state.index === 0 ? 1 : 0;
     state.text = variants[state.index];
-    state.nextChange = randomInterval();
+    state.nextChange = now + randomInterval();
   }
 
   saveState(state);
@@ -61,6 +61,7 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
+/* ===== API ===== */
 app.get("/state", (req, res) => {
   res.json(state);
 });
@@ -76,40 +77,35 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
+/* ===== FRONT ===== */
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-
 <style>
+
 html,body{
   margin:0;
   height:100%;
   overflow:hidden;
   font-family:Arial;
+  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
 }
 
-body{
-  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
+/* ВАЖНО: слои НЕ ломают друг друга */
+#bg{
+  position:fixed;
+  inset:0;
+  z-index:0;
 }
 
 canvas{
   position:fixed;
-  top:0;
-  left:0;
-  z-index:0;
+  inset:0;
+  z-index:1;
   pointer-events:none;
-}
-
-.glass{
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(16px);
-  border-radius:28px;
-  padding:34px 90px;
-  border:1px solid rgba(255,255,255,0.10);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
 }
 
 h1{
@@ -120,10 +116,17 @@ h1{
   color:#e0e7ff;
   font-size:46px;
   z-index:2;
-  text-shadow:0 0 20px rgba(139,92,246,0.25);
 }
 
-span{ color:#a78bfa; }
+span{color:#a78bfa;}
+
+.glass{
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(16px);
+  border-radius:28px;
+  padding:30px 70px;
+  border:1px solid rgba(255,255,255,0.1);
+}
 
 #adminBtn{
   position:fixed;
@@ -134,27 +137,28 @@ span{ color:#a78bfa; }
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:22px;
+  border-radius:16px;
   cursor:pointer;
-
+  z-index:3;
   background: rgba(255,255,255,0.05);
   backdrop-filter: blur(18px);
-  border-radius:16px;
   border:1px solid rgba(255,255,255,0.12);
   color:white;
-  z-index:3;
 }
 </style>
 </head>
 
 <body>
 
+<div id="bg"></div>
 <canvas id="c"></canvas>
+
 <div id="adminBtn">❤️</div>
 
 <h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
 
 <script>
+/* ===== SAFE CANVAS (НЕ ЛОМАЕТСЯ) ===== */
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 
@@ -163,131 +167,81 @@ function resize(){
   canvas.height = innerHeight;
 }
 resize();
-onresize = resize;
+addEventListener("resize", resize);
 
-/* 🌊 стабильные “жидкие массы” */
-let blobs = [];
+/* частицы */
+let blobs = Array.from({length:12}, ()=>({
+  x:Math.random()*innerWidth,
+  y:Math.random()*innerHeight,
+  vx:(Math.random()-0.5)*0.4,
+  vy:(Math.random()-0.5)*0.4,
+  r:50 + Math.random()*250
+}));
 
-// большие
-for(let i=0;i<4;i++){
-  blobs.push({
-    x:Math.random()*innerWidth,
-    y:Math.random()*innerHeight,
-    vx:0,vy:0,
-    r:320 + Math.random()*260
-  });
-}
+let p = {x:innerWidth/2,y:innerHeight/2};
 
-// средние
-for(let i=0;i<5;i++){
-  blobs.push({
-    x:Math.random()*innerWidth,
-    y:Math.random()*innerHeight,
-    vx:0,vy:0,
-    r:140 + Math.random()*120
-  });
-}
-
-// мелкие (почти невидимые)
-for(let i=0;i<8;i++){
-  blobs.push({
-    x:Math.random()*innerWidth,
-    y:Math.random()*innerHeight,
-    vx:(Math.random()-0.5)*0.6,
-    vy:(Math.random()-0.5)*0.6,
-    r:25 + Math.random()*50
-  });
+addEventListener("mousemove",e=>{
+  p.x=e.clientX;
+  p.y=e.clientY;
 });
 
-let pointer = {x:innerWidth/2,y:innerHeight/2};
-
-window.addEventListener("mousemove",e=>{
-  pointer.x=e.clientX;
-  pointer.y=e.clientY;
-});
-
-window.addEventListener("touchmove",e=>{
-  let t=e.touches[0];
-  pointer.x=t.clientX;
-  pointer.y=t.clientY;
-});
-
-function glow(x,y,r,intensity){
-  let g = ctx.createRadialGradient(x,y,0,x,y,r);
-
-  g.addColorStop(0,`rgba(167,139,250,${0.30*intensity})`);
-  g.addColorStop(0.4,`rgba(139,92,246,${0.12*intensity})`);
-  g.addColorStop(1,"rgba(0,0,0,0)");
-
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(x,y,r,0,Math.PI*2);
-  ctx.fill();
-}
-
+/* ===== DRAW ===== */
 function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.globalCompositeOperation="lighter";
+  try {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.globalCompositeOperation="lighter";
 
-  for(let b of blobs){
+    for(let b of blobs){
 
-    // движение
-    b.vx += (Math.random()-0.5)*0.01;
-    b.vy += (Math.random()-0.5)*0.01;
+      let dx=p.x-b.x;
+      let dy=p.y-b.y;
+      let d=Math.sqrt(dx*dx+dy*dy);
 
-    let dx = pointer.x - b.x;
-    let dy = pointer.y - b.y;
-    let d = Math.sqrt(dx*dx + dy*dy);
-
-    if(d < 850){
-      let f = (1 - d/850)*0.02;
-      b.vx += dx*f;
-      b.vy += dy*f;
-    }
-
-    b.vx *= 0.94;
-    b.vy *= 0.94;
-
-    b.x += b.vx;
-    b.y += b.vy;
-
-    // 💡 мягкое “световое наложение” (НЕ слипание)
-    let intensity = 1;
-
-    for(let o of blobs){
-      if(o === b) continue;
-
-      let dx2 = b.x - o.x;
-      let dy2 = b.y - o.y;
-      let dist = Math.sqrt(dx2*dx2 + dy2*dy2);
-
-      if(dist < (b.r + o.r)*0.35){
-        intensity += 0.2;
+      if(d<700){
+        let f=(1-d/700)*0.02;
+        b.vx+=dx*f;
+        b.vy+=dy*f;
       }
+
+      b.vx*=0.92;
+      b.vy*=0.92;
+
+      b.x+=b.vx;
+      b.y+=b.vy;
+
+      let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+
+      g.addColorStop(0,"rgba(167,139,250,0.35)");
+      g.addColorStop(0.4,"rgba(139,92,246,0.15)");
+      g.addColorStop(1,"transparent");
+
+      ctx.fillStyle=g;
+      ctx.beginPath();
+      ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+      ctx.fill();
     }
 
-    if(b.r < 60) intensity *= 0.4;
+    requestAnimationFrame(draw);
 
-    glow(b.x,b.y,b.r,intensity);
+  } catch(e) {
+    // если canvas упал — просто перезапускаем безопасно
+    setTimeout(draw, 500);
   }
-
-  requestAnimationFrame(draw);
 }
 draw();
 
-/* state */
+/* ===== TEXT ===== */
 async function load(){
   try{
-    let r = await fetch("/state");
-    let d = await r.json();
-    document.getElementById("text").textContent = d.text;
+    let r=await fetch("/state");
+    let d=await r.json();
+    document.getElementById("text").textContent=d.text;
   }catch(e){}
 }
-
 load();
 setInterval(load,1000);
 
-/* admin */
+/* ===== ADMIN ===== */
 adminBtn.onclick=async()=>{
   let pass=prompt("пароль");
   if(pass!=="4724")return;
@@ -313,7 +267,7 @@ adminBtn.onclick=async()=>{
 
 </body>
 </html>
-  `);
+`);
 });
 
 app.listen(3000, () => console.log("RUNNING"));
