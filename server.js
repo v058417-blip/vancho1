@@ -100,13 +100,13 @@ canvas{
   inset:0;
 }
 
-/* 🌫 табличка шире + больше воздуха */
+/* 🔧 ТАБЛИЧКА: чуть шире, но с воздухом */
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
   border-radius:28px;
 
-  padding:34px 130px; /* было 90 → шире по горизонтали */
+  padding:34px 170px; /* было 130 → шире, но не впритык */
 
   border:1px solid rgba(255,255,255,0.10);
 }
@@ -117,9 +117,7 @@ h1{
   left:50%;
   transform:translate(-50%,-50%);
   color:#e0e7ff;
-
-  font-size:69px; /* 46 * 1.5 */
-
+  font-size:69px;
   text-align:center;
 }
 
@@ -247,13 +245,14 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 💜 ИЗМЕНЁННЫЙ ГРАДИЕНТ */
+    /* 🌊 ГРАДИЕНТ: сильнее растворение в фон */
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.35)");      // центр ярче
-    g.addColorStop(0.35,"rgba(180,140,255,0.25)");   // фиолетовый слой
-    g.addColorStop(0.7,"rgba(120,80,200,0.15)");     // тёмный фиолетовый
-    g.addColorStop(1,"rgba(11,16,32,0)");            // плавно в фон (без линии)
+    g.addColorStop(0,"rgba(255,255,255,0.35)");
+    g.addColorStop(0.25,"rgba(190,150,255,0.22)");
+    g.addColorStop(0.5,"rgba(140,100,230,0.14)");
+    g.addColorStop(0.75,"rgba(80,60,140,0.08)");
+    g.addColorStop(1,"rgba(11,16,32,0)");
 
     ctx.fillStyle = g;
 
