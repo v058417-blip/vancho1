@@ -45,13 +45,18 @@ function updateState() {
       state.index = Math.floor(Math.random() * 2);
       state.text = variants[state.index];
       state.nextChange = now + randomInterval();
-    } else return saveState(state);
+    } else {
+      saveState(state);
+      return;
+    }
   }
 
   if (state.mode === "auto" && now >= state.nextChange) {
     state.index = state.index === 0 ? 1 : 0;
     state.text = variants[state.index];
-    state.nextChange = randomInterval();
+
+    // ✅ ИСПРАВЛЕНИЕ (главное)
+    state.nextChange = now + randomInterval();
   }
 
   saveState(state);
@@ -75,10 +80,9 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-// FRONT
+// FRONT (БЕЗ ИЗМЕНЕНИЙ)
 app.get("/", (req, res) => {
-  res.send(`
-<!DOCTYPE html>
+  res.send(`<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -105,15 +109,12 @@ canvas{
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-
-  width:min(62vw,960px); /* уменьшено ~в 1.25 раза */
+  width:min(62vw,960px);
   padding:34px 90px;
-
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
   border-radius:28px;
   border:1px solid rgba(255,255,255,0.10);
-
   color:#e0e7ff;
 }
 
@@ -137,7 +138,6 @@ span{ color:#a78bfa; }
   justify-content:center;
   font-size:22px;
   cursor:pointer;
-
   background: rgba(167,139,250,0.15);
   backdrop-filter: blur(18px);
   border-radius:16px;
@@ -204,8 +204,6 @@ function drawBlob(b,t,ox=0,oy=0){
   let y = b.y + oy;
 
   let g = ctx.createRadialGradient(x,y,0,x,y,b.r);
-
-  /* чуть более плотный центр */
   g.addColorStop(0,"rgba(255,255,255,0.32)");
   g.addColorStop(0.4,"rgba(167,139,250,0.18)");
   g.addColorStop(1,"rgba(0,0,0,0)");
@@ -213,15 +211,7 @@ function drawBlob(b,t,ox=0,oy=0){
   ctx.fillStyle = g;
 
   ctx.beginPath();
-  ctx.ellipse(
-    x,
-    y,
-    b.r,
-    b.r*0.75,
-    Math.sin(t)*0.2,
-    0,
-    Math.PI*2
-  );
+  ctx.ellipse(x,y,b.r,b.r*0.75,Math.sin(t)*0.2,0,Math.PI*2);
   ctx.fill();
 }
 
@@ -318,8 +308,7 @@ adminBtn.onclick = async ()=>{
 </script>
 
 </body>
-</html>
-`);
+</html>`);
 });
 
 app.listen(3000, () => console.log("RUNNING"));
