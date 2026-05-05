@@ -100,11 +100,14 @@ canvas{
   inset:0;
 }
 
+/* 🌫 табличка шире + больше воздуха */
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
   border-radius:28px;
-  padding:34px 90px;
+
+  padding:34px 130px; /* было 90 → шире по горизонтали */
+
   border:1px solid rgba(255,255,255,0.10);
 }
 
@@ -114,12 +117,14 @@ h1{
   left:50%;
   transform:translate(-50%,-50%);
   color:#e0e7ff;
-  font-size:46px;
+
+  font-size:69px; /* 46 * 1.5 */
+
+  text-align:center;
 }
 
 span{ color:#a78bfa; }
 
-/* ❤️ ФИОЛЕТОВОЕ СТЕКЛО */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -160,7 +165,6 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
-// 🌊 БАЛАНС: меньше объектов, но крупнее
 let blobs = [];
 
 for(let i=0;i<10;i++){
@@ -188,7 +192,6 @@ addEventListener("touchmove", e=>{
   p.y = t.clientY;
 });
 
-// 🌪 мягкий хаос
 function flow(x,y,t){
   return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
 }
@@ -202,11 +205,9 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b = blobs[i];
 
-    // хаотичное поле
     b.ax += flow(b.x,b.y,t)*0.4;
     b.ay += flow(b.y,b.x,t)*0.4;
 
-    // палец (мягко)
     let dx = p.x - b.x;
     let dy = p.y - b.y;
     let d = Math.sqrt(dx*dx+dy*dy);
@@ -217,7 +218,6 @@ function draw(){
       b.ay += dy*f;
     }
 
-    // анти-слипание (ключ)
     for(let j=0;j<blobs.length;j++){
       if(i===j) continue;
 
@@ -228,13 +228,11 @@ function draw(){
 
       if(dist < 260){
         let k = (1 - dist/260);
-
         b.ax += dx2 * k * 0.02;
         b.ay += dy2 * k * 0.02;
       }
     }
 
-    // трение
     b.vx = (b.vx + b.ax) * 0.9;
     b.vy = (b.vy + b.ay) * 0.9;
 
@@ -244,18 +242,18 @@ function draw(){
     b.ax *= 0.5;
     b.ay *= 0.5;
 
-    // wrap
     if(b.x<0)b.x=innerWidth;
     if(b.x>innerWidth)b.x=0;
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    // 💜 мягкая вода БЕЗ границ
+    /* 💜 ИЗМЕНЁННЫЙ ГРАДИЕНТ */
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.22)");
-    g.addColorStop(0.4,"rgba(167,139,250,0.18)");
-    g.addColorStop(1,"rgba(0,0,0,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.35)");      // центр ярче
+    g.addColorStop(0.35,"rgba(180,140,255,0.25)");   // фиолетовый слой
+    g.addColorStop(0.7,"rgba(120,80,200,0.15)");     // тёмный фиолетовый
+    g.addColorStop(1,"rgba(11,16,32,0)");            // плавно в фон (без линии)
 
     ctx.fillStyle = g;
 
@@ -276,7 +274,6 @@ function draw(){
 }
 draw();
 
-// TEXT
 async function load(){
   let r = await fetch("/state");
   let d = await r.json();
@@ -285,7 +282,6 @@ async function load(){
 load();
 setInterval(load,1000);
 
-// ADMIN
 adminBtn.onclick = async ()=>{
   let pass = prompt("пароль");
   if(pass !== "4724") return;
@@ -312,7 +308,6 @@ adminBtn.onclick = async ()=>{
 </body>
 </html>
 `);
-
 });
 
 app.listen(3000, () => console.log("RUNNING"));
