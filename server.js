@@ -59,7 +59,6 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
-// API
 app.get("/state", (req, res) => {
   res.json(state);
 });
@@ -75,7 +74,6 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -101,25 +99,32 @@ canvas{
 }
 
 .glass{
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(16px);
-  border-radius:28px;
-  padding:34px 90px;
-  border:1px solid rgba(255,255,255,0.10);
-}
-
-h1{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
+
+  width:min(90vw,1100px);
+  padding:40px 70px;
+
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(16px);
+  border-radius:28px;
+  border:1px solid rgba(255,255,255,0.10);
+
   color:#e0e7ff;
-  font-size:46px;
+}
+
+h1{
+  margin:0;
+  font-size:69px; /* ~1.5x */
+  text-align:left;
+  line-height:1.1;
 }
 
 span{ color:#a78bfa; }
 
-/* ❤️ ФИОЛЕТОВОЕ СТЕКЛО */
+/* ❤️ */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -147,7 +152,9 @@ span{ color:#a78bfa; }
 <canvas id="c"></canvas>
 <div id="adminBtn">❤️</div>
 
-<h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
+<div class="glass">
+  <h1>сейчас Ваня <span id="text">...</span></h1>
+</div>
 
 <script>
 const c = document.getElementById("c");
@@ -160,7 +167,6 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
-// 🌊 БАЛАНС: меньше объектов, но крупнее
 let blobs = [];
 
 for(let i=0;i<10;i++){
@@ -188,9 +194,33 @@ addEventListener("touchmove", e=>{
   p.y = t.clientY;
 });
 
-// 🌪 мягкий хаос
 function flow(x,y,t){
   return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
+}
+
+function drawBlob(b, t, ox=0, oy=0){
+  let x = b.x + ox;
+  let y = b.y + oy;
+
+  let g = ctx.createRadialGradient(x,y,0,x,y,b.r);
+
+  g.addColorStop(0,"rgba(255,255,255,0.35)");
+  g.addColorStop(0.35,"rgba(167,139,250,0.25)");
+  g.addColorStop(1,"rgba(5,8,22,0)");
+
+  ctx.fillStyle = g;
+
+  ctx.beginPath();
+  ctx.ellipse(
+    x,
+    y,
+    b.r,
+    b.r*0.75,
+    Math.sin(t)*0.2,
+    0,
+    Math.PI*2
+  );
+  ctx.fill();
 }
 
 function draw(){
@@ -202,11 +232,9 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b = blobs[i];
 
-    // хаотичное поле
     b.ax += flow(b.x,b.y,t)*0.4;
     b.ay += flow(b.y,b.x,t)*0.4;
 
-    // палец (мягко)
     let dx = p.x - b.x;
     let dy = p.y - b.y;
     let d = Math.sqrt(dx*dx+dy*dy);
@@ -217,7 +245,6 @@ function draw(){
       b.ay += dy*f;
     }
 
-    // анти-слипание (ключ)
     for(let j=0;j<blobs.length;j++){
       if(i===j) continue;
 
@@ -228,13 +255,11 @@ function draw(){
 
       if(dist < 260){
         let k = (1 - dist/260);
-
         b.ax += dx2 * k * 0.02;
         b.ay += dy2 * k * 0.02;
       }
     }
 
-    // трение
     b.vx = (b.vx + b.ax) * 0.9;
     b.vy = (b.vy + b.ay) * 0.9;
 
@@ -244,39 +269,23 @@ function draw(){
     b.ax *= 0.5;
     b.ay *= 0.5;
 
-    // wrap
-    if(b.x<0)b.x=innerWidth;
-    if(b.x>innerWidth)b.x=0;
-    if(b.y<0)b.y=innerHeight;
-    if(b.y>innerHeight)b.y=0;
+    // логика НЕ меняется — только визуально убираем рывки
+    let w = innerWidth;
+    let h = innerHeight;
 
-    // 💜 мягкая вода БЕЗ границ
-    let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    drawBlob(b,t,0,0);
 
-    g.addColorStop(0,"rgba(255,255,255,0.22)");
-    g.addColorStop(0.4,"rgba(167,139,250,0.18)");
-    g.addColorStop(1,"rgba(0,0,0,0)");
-
-    ctx.fillStyle = g;
-
-    ctx.beginPath();
-    ctx.ellipse(
-      b.x,
-      b.y,
-      b.r,
-      b.r*0.75,
-      Math.sin(i+t)*0.2,
-      0,
-      Math.PI*2
-    );
-    ctx.fill();
+    // дубли для плавности краёв (без изменения физики)
+    if(b.x < b.r) drawBlob(b,t,w,0);
+    if(b.x > w-b.r) drawBlob(b,t,-w,0);
+    if(b.y < b.r) drawBlob(b,t,0,h);
+    if(b.y > h-b.r) drawBlob(b,t,0,-h);
   }
 
   requestAnimationFrame(draw);
 }
 draw();
 
-// TEXT
 async function load(){
   let r = await fetch("/state");
   let d = await r.json();
@@ -285,7 +294,6 @@ async function load(){
 load();
 setInterval(load,1000);
 
-// ADMIN
 adminBtn.onclick = async ()=>{
   let pass = prompt("пароль");
   if(pass !== "4724") return;
@@ -312,7 +320,6 @@ adminBtn.onclick = async ()=>{
 </body>
 </html>
 `);
-
 });
 
 app.listen(3000, () => console.log("RUNNING"));
