@@ -98,7 +98,6 @@ canvas{
   inset:0;
 }
 
-/* стекло */
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
@@ -116,13 +115,8 @@ h1{
   font-size:46px;
 }
 
-/* текст */
-span{
-  color:#a78bfa;
-  text-shadow: 0 0 18px rgba(167,139,250,0.45);
-}
+span{ color:#a78bfa; }
 
-/* 💜 админка (исправленное сердце) */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -139,11 +133,6 @@ span{
   backdrop-filter: blur(18px);
   border-radius:16px;
   border:1px solid rgba(255,255,255,0.12);
-
-  color:#a78bfa;
-  text-shadow:
-    0 0 14px rgba(167,139,250,0.7),
-    0 0 30px rgba(139,92,246,0.4);
 }
 </style>
 </head>
@@ -151,7 +140,7 @@ span{
 <body>
 
 <canvas id="c"></canvas>
-<div id="adminBtn">💜</div>
+<div id="adminBtn">❤️</div>
 
 <h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
 
@@ -166,30 +155,19 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-/* 🌊 СТАБИЛЬНАЯ ВЕРСИЯ (КАК ТЫ ЛЮБИЛА) */
+/* 🌊 ЖИВАЯ СИСТЕМА (без центра вообще) */
 
-/* меньше частиц, но крупнее */
 let blobs=[];
 
-/* большие массы */
-for(let i=0;i<3;i++){
+for(let i=0;i<14;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
-    vx:0,vy:0,
-    r:520 + Math.random()*600   // 👈 БОЛЬШЕ
+    vx:(Math.random()-0.5)*1.5,
+    vy:(Math.random()-0.5)*1.5,
+    r:30 + Math.random()*420
   });
 }
-
-/* средние */
-for(let i=0;i<3;i++){
-  blobs.push({
-    x:Math.random()*innerWidth,
-    y:Math.random()*innerHeight,
-    vx:0,vy:0,
-    r:220 + Math.random()*200   // 👈 БОЛЬШЕ
-  });
-});
 
 let p={x:0,y:0};
 
@@ -204,8 +182,9 @@ addEventListener("touchmove",e=>{
   p.y=t.clientY;
 });
 
+/* 🧠 ВИХРЕВОЕ ПОЛЕ (главная замена центра) */
 function flow(x,y,t){
-  return Math.sin(x*0.0018+t)*Math.cos(y*0.0018-t);
+  return Math.sin(x*0.002 + t) * Math.cos(y*0.002 - t);
 }
 
 function draw(){
@@ -217,59 +196,69 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b=blobs[i];
 
-    /* мягкое движение */
-    b.vx += flow(b.x,b.y,t)*0.5;
-    b.vy += flow(b.y,b.x,t)*0.5;
+    /* 🌪 ВИХРЕВОЕ ДВИЖЕНИЕ (НЕ центр!) */
+    b.vx += flow(b.x,b.y,t)*0.6;
+    b.vy += flow(b.y,b.x,t)*0.6;
 
+    /* 👆 палец — мягкое притяжение */
     let dx=p.x-b.x;
     let dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
 
-    if(d<900){
-      let f=(1-d/900)*0.003;
+    if(d<800){
+      let f=(1-d/800)*0.004;
       b.vx+=dx*f;
       b.vy+=dy*f;
     }
 
-    /* лёгкий хаос (НЕ УСИЛЯЛ) */
-    b.vx += (Math.random()-0.5)*0.18;
-    b.vy += (Math.random()-0.5)*0.18;
+    /* 💨 рассеивание (ВАЖНО: убирает “слипание”) */
+    b.vx += (Math.random()-0.5)*0.3;
+    b.vy += (Math.random()-0.5)*0.3;
 
-    b.vx*=0.94;
-    b.vy*=0.94;
+    /* ✨ локальное взаимодействие (НЕ глобальное) */
+    for(let j=0;j<blobs.length;j++){
+      if(i===j) continue;
+
+      let o=blobs[j];
+      let dx2=o.x-b.x;
+      let dy2=o.y-b.y;
+      let d2=Math.sqrt(dx2*dx2+dy2*dy2);
+
+      if(d2<180){
+        let k=(1-d2/180);
+
+        /* короткое “склеивание” */
+        b.vx+=dx2*k*0.001;
+
+        /* быстрое разлипание */
+        b.vx-=dx2*k*0.004;
+        b.vy-=dy2*k*0.004;
+      }
+    }
+
+    b.vx*=0.92;
+    b.vy*=0.92;
 
     b.x+=b.vx;
     b.y+=b.vy;
 
+    /* 💧 wrap (чтобы не собирались в центре) */
     if(b.x<0)b.x=innerWidth;
     if(b.x>innerWidth)b.x=0;
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 💧 мягкая жидкость */
-    let g=ctx.createRadialGradient(
-      b.x,b.y,0,
-      b.x,b.y,b.r
-    );
+    /* 🌌 жидкое свечение */
+    let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.32)");
+    g.addColorStop(0,"rgba(255,255,255,0.35)");
     g.addColorStop(0.3,"rgba(167,139,250,0.25)");
-    g.addColorStop(0.6,"rgba(139,92,246,0.10)");
-    g.addColorStop(1,"rgba(0,0,0,0)");
+    g.addColorStop(1,"transparent");
 
     ctx.fillStyle=g;
 
     ctx.beginPath();
-    ctx.ellipse(
-      b.x,
-      b.y,
-      b.r,
-      b.r*0.72,
-      Math.sin(i+t)*0.2,
-      0,
-      Math.PI*2
-    );
-
+    ctx.ellipse(b.x,b.y,b.r,b.r*0.7,Math.sin(i+t)*0.2,0,Math.PI*2);
     ctx.fill();
   }
 
