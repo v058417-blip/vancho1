@@ -59,7 +59,6 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
-// API
 app.get("/state", (req, res) => {
   res.json(state);
 });
@@ -75,7 +74,6 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -101,25 +99,32 @@ canvas{
 }
 
 .glass{
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(16px);
-  border-radius:28px;
-  padding:23px 60px;
-  border:1px solid rgba(255,255,255,0.10);
-}
-
-h1{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
+
+  width:min(72vw,880px);
+  padding:32px 56px;
+
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(16px);
+  border-radius:28px;
+  border:1px solid rgba(255,255,255,0.10);
+
   color:#e0e7ff;
-  font-size:46px;
+}
+
+h1{
+  margin:0;
+  font-size:86px;
+  text-align:left;
+  line-height:1.1;
 }
 
 span{ color:#a78bfa; }
 
-/* ❤️ ФИОЛЕТОВОЕ СТЕКЛО */
+/* ❤️ */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -147,7 +152,9 @@ span{ color:#a78bfa; }
 <canvas id="c"></canvas>
 <div id="adminBtn">❤️</div>
 
-<h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
+<div class="glass">
+  <h1>сейчас Ваня <span id="text">...</span></h1>
+</div>
 
 <script>
 const c = document.getElementById("c");
@@ -160,7 +167,6 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
-// 🌊 БАЛАНС: меньше объектов, но крупнее
 let blobs = [];
 
 for(let i=0;i<10;i++){
@@ -188,7 +194,6 @@ addEventListener("touchmove", e=>{
   p.y = t.clientY;
 });
 
-// 🌪 мягкий хаос
 function flow(x,y,t){
   return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
 }
@@ -225,7 +230,6 @@ function draw(){
 
       if(dist < 260){
         let k = (1 - dist/260);
-
         b.ax += dx2 * k * 0.02;
         b.ay += dy2 * k * 0.02;
       }
@@ -245,11 +249,12 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    // 💜 мягкая вода БЕЗ резкой границы
+    // 💜 smoother fade into background (no hard edge)
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
     g.addColorStop(0,"rgba(255,255,255,0.22)");
-    g.addColorStop(0.4,"rgba(167,139,250,0.18)");
+    g.addColorStop(0.35,"rgba(167,139,250,0.18)");
+    g.addColorStop(0.7,"rgba(30,27,75,0.08)");
     g.addColorStop(1,"rgba(5,8,22,1)");
 
     ctx.fillStyle = g;
@@ -271,7 +276,6 @@ function draw(){
 }
 draw();
 
-// TEXT
 async function load(){
   let r = await fetch("/state");
   let d = await r.json();
@@ -280,7 +284,6 @@ async function load(){
 load();
 setInterval(load,1000);
 
-// ADMIN
 adminBtn.onclick = async ()=>{
   let pass = prompt("пароль");
   if(pass !== "4724") return;
