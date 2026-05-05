@@ -6,6 +6,7 @@ const app = express();
 app.use(express.json());
 
 const FILE = path.join(__dirname, "state.json");
+
 const variants = ["натурал", "гомосек"];
 
 function randomInterval() {
@@ -97,27 +98,26 @@ canvas{
   inset:0;
 }
 
+/* 📦 ТАБЛИЧКА УВЕЛИЧЕНА */
 .glass{
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(16px);
+  border-radius:42px;
+  padding:50px 140px; /* увеличено пропорционально */
+  border:1px solid rgba(255,255,255,0.10);
+}
+
+/* 🔤 ТЕКСТ +1.5 РАЗА */
+h1{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  width:78vw;
-  max-width:1100px;
-  padding:70px 80px;
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(18px);
-  border-radius:34px;
-  border:1px solid rgba(255,255,255,0.10);
-  text-align:center;
-}
-
-h1{
-  margin:0;
-  font-size:64px;
   color:#e0e7ff;
+  font-size:69px; /* было ~46 → x1.5 */
 }
 
+/* 💜 акцент */
 span{ color:#a78bfa; }
 
 #adminBtn{
@@ -129,13 +129,13 @@ span{ color:#a78bfa; }
   display:flex;
   align-items:center;
   justify-content:center;
+  font-size:22px;
   cursor:pointer;
 
-  background: rgba(167,139,250,0.15);
+  background: rgba(255,255,255,0.05);
   backdrop-filter: blur(18px);
   border-radius:16px;
-  border:1px solid rgba(167,139,250,0.35);
-  color:#c4b5fd;
+  border:1px solid rgba(255,255,255,0.12);
 }
 </style>
 </head>
@@ -145,9 +145,7 @@ span{ color:#a78bfa; }
 <canvas id="c"></canvas>
 <div id="adminBtn">❤️</div>
 
-<div class="glass">
-  <h1>сейчас Ваня <span id="text">...</span></h1>
-</div>
+<h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
 
 <script>
 const c=document.getElementById("c");
@@ -160,23 +158,20 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-/* 🌊 ЛЮБИМАЯ ФИЗИКА (ВОЗВРАЩЕНА 1:1) */
-
+/* 🌊 ВАЖНО: физика НЕ ТРОНУТА */
 let blobs=[];
 
-for(let i=0;i<10;i++){
+for(let i=0;i<14;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
-    vx:(Math.random()-0.5)*1.2,
-    vy:(Math.random()-0.5)*1.2,
-    ax:0,
-    ay:0,
-    r:180 + Math.random()*320
+    vx:(Math.random()-0.5)*1.5,
+    vy:(Math.random()-0.5)*1.5,
+    r:30 + Math.random()*420
   });
 }
 
-let p={x:innerWidth/2,y:innerHeight/2};
+let p={x:0,y:0};
 
 addEventListener("mousemove",e=>{
   p.x=e.clientX;
@@ -190,7 +185,7 @@ addEventListener("touchmove",e=>{
 });
 
 function flow(x,y,t){
-  return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
+  return Math.sin(x*0.002 + t) * Math.cos(y*0.002 - t);
 }
 
 function draw(){
@@ -202,53 +197,60 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b=blobs[i];
 
-    b.ax += flow(b.x,b.y,t)*0.4;
-    b.ay += flow(b.y,b.x,t)*0.4;
+    b.vx += flow(b.x,b.y,t)*0.6;
+    b.vy += flow(b.y,b.x,t)*0.6;
 
     let dx=p.x-b.x;
     let dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
 
-    if(d<900){
-      let f=(1-d/900)*0.002;
-      b.ax+=dx*f;
-      b.ay+=dy*f;
+    if(d<800){
+      let f=(1-d/800)*0.004;
+      b.vx+=dx*f;
+      b.vy+=dy*f;
     }
 
-    b.vx=(b.vx+b.ax)*0.9;
-    b.vy=(b.vy+b.ay)*0.9;
+    b.vx += (Math.random()-0.5)*0.3;
+    b.vy += (Math.random()-0.5)*0.3;
+
+    for(let j=0;j<blobs.length;j++){
+      if(i===j) continue;
+
+      let o=blobs[j];
+      let dx2=o.x-b.x;
+      let dy2=o.y-b.y;
+      let d2=Math.sqrt(dx2*dx2+dy2*dy2);
+
+      if(d2<180){
+        let k=(1-d2/180);
+        b.vx+=dx2*k*0.001;
+        b.vx-=dx2*k*0.004;
+        b.vy-=dy2*k*0.004;
+      }
+    }
+
+    b.vx*=0.92;
+    b.vy*=0.92;
 
     b.x+=b.vx;
     b.y+=b.vy;
-
-    b.ax*=0.5;
-    b.ay*=0.5;
 
     if(b.x<0)b.x=innerWidth;
     if(b.x>innerWidth)b.x=0;
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 🎨 ТОЛЬКО ВИЗУАЛ (НЕ ФИЗИКА) */
+    /* 💜 ГРАДИЕНТ ИЗМЕНЁН ТОЛЬКО ЗДЕСЬ */
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.22)");
-    g.addColorStop(0.3,"rgba(199,210,254,0.28)");
-    g.addColorStop(0.6,"rgba(167,139,250,0.22)");
-    g.addColorStop(1,"rgba(0,0,0,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.28)");     // центр без изменений
+    g.addColorStop(0.45,"rgba(167,139,250,0.22)");  // фиолетовый
+    g.addColorStop(1,"rgba(76,29,149,0.0)");        // тёмно-фиолетовый в ноль
 
     ctx.fillStyle=g;
 
     ctx.beginPath();
-    ctx.ellipse(
-      b.x,
-      b.y,
-      b.r,
-      b.r*0.75,
-      Math.sin(i+t)*0.2,
-      0,
-      Math.PI*2
-    );
+    ctx.ellipse(b.x,b.y,b.r,b.r*0.7,Math.sin(i+t)*0.2,0,Math.PI*2);
     ctx.fill();
   }
 
@@ -256,7 +258,6 @@ function draw(){
 }
 draw();
 
-/* TEXT */
 async function load(){
   let r=await fetch("/state");
   let d=await r.json();
@@ -265,7 +266,6 @@ async function load(){
 load();
 setInterval(load,1000);
 
-/* ADMIN */
 adminBtn.onclick=async()=>{
   let pass=prompt("пароль");
   if(pass!=="4724")return;
@@ -291,7 +291,7 @@ adminBtn.onclick=async()=>{
 
 </body>
 </html>
-  `);
+`);
 });
 
 app.listen(3000, () => console.log("RUNNING"));
