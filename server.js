@@ -92,11 +92,7 @@ html,body{
 }
 
 body{
-  background: radial-gradient(circle at 30% 30%,
-    #2a2366,
-    #0f1430 55%,
-    #050816
-  );
+  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
 }
 
 canvas{
@@ -104,7 +100,7 @@ canvas{
   inset:0;
 }
 
-/* 📦 ПАНЕЛЬ */
+/* 📦 УВЕЛИЧЕННАЯ ТАБЛИЧКА */
 .glass{
   position:absolute;
   top:50%;
@@ -126,15 +122,16 @@ canvas{
   text-align:center;
 }
 
-/* 🔤 текст */
+/* 🔤 ПРОПОРЦИОНАЛЬНЫЙ ТЕКСТ */
 h1{
   margin:0;
   color:#e0e7ff;
-  font-size: clamp(44px, 4.2vw, 64px);
+  font-size: clamp(46px, 4.5vw, 72px);
+  line-height:1.1;
 }
 
 span{
-  color:#b6a3ff;
+  color:#a78bfa;
 }
 
 /* ❤️ админка */
@@ -182,7 +179,7 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-// 🌊 жидкость
+// 🌊 жидкость (НЕ МЕНЯЛ)
 let blobs=[];
 
 for(let i=0;i<10;i++){
@@ -250,13 +247,13 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    // 💜 мягкий яркий градиент
+    // 💜 ОБНОВЛЁННЫЙ ГРАДИЕНТ (фиолет + тёмный фиолет)
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.30)");
-    g.addColorStop(0.2,"rgba(180,160,255,0.22)");
-    g.addColorStop(0.5,"rgba(139,92,246,0.16)");
-    g.addColorStop(1,"rgba(10,10,30,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.28)");
+    g.addColorStop(0.2,"rgba(190,170,255,0.25)");
+    g.addColorStop(0.55,"rgba(139,92,246,0.18)");
+    g.addColorStop(1,"rgba(40,20,80,0)");
 
     ctx.fillStyle=g;
 
