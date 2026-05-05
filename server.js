@@ -105,7 +105,10 @@ canvas{
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  width:min(88vw,1000px);
+
+  /* 👉 ИЗМЕНЕНО ТОЛЬКО ЭТО */
+  width:min(80vw,920px);
+
   padding:34px 80px;
 
   background: rgba(255,255,255,0.06);
@@ -195,7 +198,6 @@ function flow(x,y,t){
   return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
 }
 
-// 💧 мягкие края БЕЗ wrap
 function boundaryForce(b){
   let margin = 120;
   let strength = 0.003;
@@ -244,7 +246,6 @@ function draw(){
       }
     }
 
-    // 👉 КЛЮЧ: мягкие границы вместо wrap
     boundaryForce(b);
 
     b.vx = (b.vx + b.ax) * 0.9;
