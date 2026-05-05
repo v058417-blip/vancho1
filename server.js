@@ -14,7 +14,6 @@ function randomInterval() {
   return 60000 + Math.random() * (3 * 24 * 60 * 60 * 1000);
 }
 
-// загрузка состояния
 function loadState() {
   try {
     return JSON.parse(fs.readFileSync(FILE, "utf8"));
@@ -38,25 +37,25 @@ function saveState(s) {
 
 let state = loadState();
 
-// 🔥 ГЛАВНАЯ ЛОГИКА (ИСПРАВЛЕНА)
+// ✅ исправленная логика
 function updateState() {
   const now = Date.now();
 
-  // manual режим — НЕ ТРОГАЕМ пока не истёк
+  // manual режим
   if (state.mode === "manual") {
-    if (now > state.until) {
-      // возврат в авто
+    if (now >= state.until) {
       state.mode = "auto";
       state.index = Math.floor(Math.random() * 2);
       state.text = variants[state.index];
       state.nextChange = now + randomInterval();
     } else {
-      return saveState(state);
+      saveState(state);
+      return;
     }
   }
 
   // авто режим
-  if (state.mode === "auto" && now > state.nextChange) {
+  if (state.mode === "auto" && now >= state.nextChange) {
     state.index = state.index === 0 ? 1 : 0;
     state.text = variants[state.index];
     state.nextChange = now + randomInterval();
@@ -65,7 +64,8 @@ function updateState() {
   saveState(state);
 }
 
-setInterval(updateState, 5000);
+// 🔥 теперь проверка каждую секунду
+setInterval(updateState, 1000);
 
 // API
 app.get("/state", (req, res) => {
@@ -74,14 +74,7 @@ app.get("/state", (req, res) => {
 });
 
 app.post("/update", (req, res) => {
-  const { text, value, unit } = req.body;
-
-  let ms = Number(value);
-
-  if (unit === "min") ms *= 60;
-  if (unit === "hour") ms *= 3600;
-
-  ms *= 1000;
+  const { text, ms } = req.body;
 
   state.mode = "manual";
   state.text = text;
@@ -143,22 +136,32 @@ async function load(){
   document.getElementById("text").textContent = d.text;
 }
 load();
-setInterval(load,2000);
+setInterval(load,1000);
 
-// админка с выбором времени
+// ✅ новая админка (как ты хотела)
 adminBtn.onclick = async ()=>{
   const pass = prompt("пароль");
   if(pass !== "4724") return;
 
   const text = prompt("текст");
 
-  const value = prompt("время (число)");
-  const unit = prompt("единица: sec / min / hour");
+  // сначала выбор единицы
+  const unitChoice = prompt("выбери:\n1 - секунды\n2 - минуты\n3 - часы");
+
+  let multiplier = 1000;
+
+  if(unitChoice === "1") multiplier = 1000;
+  if(unitChoice === "2") multiplier = 60 * 1000;
+  if(unitChoice === "3") multiplier = 60 * 60 * 1000;
+
+  const value = prompt("введи число");
+
+  const ms = Number(value) * multiplier;
 
   await fetch("/update",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({text, value, unit})
+    body:JSON.stringify({text, ms})
   });
 
   load();
