@@ -98,7 +98,6 @@ canvas{
   inset:0;
 }
 
-/* стекло */
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
@@ -118,10 +117,10 @@ h1{
 
 span{
   color:#a78bfa;
-  text-shadow: 0 0 14px rgba(167,139,250,0.5);
+  text-shadow: 0 0 18px rgba(167,139,250,0.5);
 }
 
-/* 💜 админка */
+/* 💜 АДМИНКА (исправлено сердце) */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -131,7 +130,6 @@ span{
   display:flex;
   align-items:center;
   justify-content:center;
-
   font-size:22px;
   cursor:pointer;
 
@@ -141,7 +139,7 @@ span{
   border:1px solid rgba(255,255,255,0.12);
 
   color:#c4b5fd;
-  text-shadow: 0 0 18px rgba(196,181,253,0.8);
+  text-shadow: 0 0 18px rgba(196,181,253,0.85);
 }
 </style>
 </head>
@@ -154,90 +152,104 @@ span{
 <h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
 
 <script>
-const c = document.getElementById("c");
-const ctx = c.getContext("2d");
+const c=document.getElementById("c");
+const ctx=c.getContext("2d");
 
 function resize(){
-  c.width = innerWidth;
-  c.height = innerHeight;
+  c.width=innerWidth;
+  c.height=innerHeight;
 }
 resize();
-addEventListener("resize", resize);
+addEventListener("resize",resize);
 
-/* 🌊 СТАБИЛЬНАЯ ВОДА (БЕЗ СЛИПАНИЙ И ПОЛОМКИ) */
+/* 🌊 МЕНЬШЕ ОБЪЕКТОВ + БОЛЬШЕ РАЗМЕР */
 
-let blobs = [];
+let blobs=[];
 
-/* просто крупные мягкие пятна */
-for(let i=0;i<6;i++){
+/* было 14 → стало 6 (чище и стабильнее) */
+for(let i=0;i<4;i++){
   blobs.push({
-    x: Math.random()*innerWidth,
-    y: Math.random()*innerHeight,
-    vx: (Math.random()-0.5)*0.6,
-    vy: (Math.random()-0.5)*0.6,
-    r: 300 + Math.random()*400
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight,
+    vx:(Math.random()-0.5)*1.2,
+    vy:(Math.random()-0.5)*1.2,
+    r:380 + Math.random()*520   // ⬆ крупнее
   });
 }
 
-let p = {x: innerWidth/2, y: innerHeight/2};
+/* дополнительные мягкие массы */
+for(let i=0;i<2;i++){
+  blobs.push({
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight,
+    vx:(Math.random()-0.5)*1.0,
+    vy:(Math.random()-0.5)*1.0,
+    r:220 + Math.random()*260
+  });
+}
 
-addEventListener("mousemove", e=>{
-  p.x = e.clientX;
-  p.y = e.clientY;
+let p={x:0,y:0};
+
+addEventListener("mousemove",e=>{
+  p.x=e.clientX;
+  p.y=e.clientY;
 });
 
-addEventListener("touchmove", e=>{
-  let t = e.touches[0];
-  p.x = t.clientX;
-  p.y = t.clientY;
+addEventListener("touchmove",e=>{
+  let t=e.touches[0];
+  p.x=t.clientX;
+  p.y=t.clientY;
 });
+
+function flow(x,y,t){
+  return Math.sin(x*0.002 + t) * Math.cos(y*0.002 - t);
+}
 
 function draw(){
   ctx.clearRect(0,0,c.width,c.height);
-  ctx.globalCompositeOperation = "lighter";
+  ctx.globalCompositeOperation="lighter";
+
+  let t=Date.now()*0.001;
 
   for(let b of blobs){
 
-    /* мягкое автономное движение */
-    b.x += b.vx;
-    b.y += b.vy;
+    b.vx += flow(b.x,b.y,t)*0.45;
+    b.vy += flow(b.y,b.x,t)*0.45;
 
-    /* лёгкое “дрожание жизни” */
-    b.vx += (Math.random()-0.5)*0.03;
-    b.vy += (Math.random()-0.5)*0.03;
+    let dx=p.x-b.x;
+    let dy=p.y-b.y;
+    let d=Math.sqrt(dx*dx+dy*dy);
 
-    /* реакция на палец */
-    let dx = p.x - b.x;
-    let dy = p.y - b.y;
-    let d = Math.sqrt(dx*dx + dy*dy);
-
-    if(d < 800){
-      let f = (1 - d/800)*0.003;
-      b.vx += dx * f;
-      b.vy += dy * f;
+    if(d<900){
+      let f=(1-d/900)*0.0025;
+      b.vx+=dx*f;
+      b.vy+=dy*f;
     }
 
-    /* затухание */
-    b.vx *= 0.96;
-    b.vy *= 0.96;
+    b.vx += (Math.random()-0.5)*0.08;
+    b.vy += (Math.random()-0.5)*0.08;
 
-    /* wrap */
-    if(b.x < 0) b.x = innerWidth;
-    if(b.x > innerWidth) b.x = 0;
-    if(b.y < 0) b.y = innerHeight;
-    if(b.y > innerHeight) b.y = 0;
+    b.vx*=0.95;
+    b.vy*=0.95;
 
-    /* 💧 мягкая вода */
-    let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    b.x+=b.vx;
+    b.y+=b.vy;
 
-    g.addColorStop(0,"rgba(255,255,255,0.25)");
-    g.addColorStop(0.4,"rgba(167,139,250,0.18)");
+    if(b.x<0)b.x=innerWidth;
+    if(b.x>innerWidth)b.x=0;
+    if(b.y<0)b.y=innerHeight;
+    if(b.y>innerHeight)b.y=0;
+
+    let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+
+    g.addColorStop(0,"rgba(255,255,255,0.28)");
+    g.addColorStop(0.4,"rgba(167,139,250,0.20)");
     g.addColorStop(1,"rgba(0,0,0,0)");
 
-    ctx.fillStyle = g;
+    ctx.fillStyle=g;
 
     ctx.beginPath();
-    ctx.ellipse(b.x,b.y,b.r,b.r*0.7,0,0,Math.PI*2);
+    ctx.ellipse(b.x,b.y,b.r,b.r*0.72,0,0,Math.PI*2);
     ctx.fill();
   }
 
@@ -247,31 +259,31 @@ draw();
 
 /* TEXT */
 async function load(){
-  let r = await fetch("/state");
-  let d = await r.json();
-  document.getElementById("text").textContent = d.text;
+  let r=await fetch("/state");
+  let d=await r.json();
+  document.getElementById("text").textContent=d.text;
 }
 load();
 setInterval(load,1000);
 
 /* ADMIN */
-adminBtn.onclick = async ()=>{
-  let pass = prompt("пароль");
-  if(pass !== "4724") return;
+adminBtn.onclick=async()=>{
+  let pass=prompt("пароль");
+  if(pass!=="4724")return;
 
-  let text = prompt("текст");
-  let type = prompt("1-сек 2-мин 3-час");
+  let text=prompt("текст");
+  let type=prompt("1-сек 2-мин 3-час");
 
-  let mult = 1000;
-  if(type==="2") mult = 60000;
-  if(type==="3") mult = 3600000;
+  let mult=1000;
+  if(type==="2")mult=60000;
+  if(type==="3")mult=3600000;
 
-  let val = prompt("число");
+  let val=prompt("число");
 
   await fetch("/update",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({text, ms:Number(val)*mult})
+    body:JSON.stringify({text,ms:Number(val)*mult})
   });
 
   load();
