@@ -99,28 +99,21 @@ canvas{
   inset:0;
 }
 
-/* 📦 ТАБЛИЧКА — теперь просторная */
 .glass{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-
   width:78vw;
   max-width:1100px;
-
   padding:70px 80px;
-
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(18px);
-
   border-radius:34px;
   border:1px solid rgba(255,255,255,0.10);
-
   text-align:center;
 }
 
-/* 🔤 текст чуть крупнее */
 h1{
   margin:0;
   font-size:64px;
@@ -128,29 +121,23 @@ h1{
   line-height:1.1;
 }
 
-span{
-  color:#a78bfa;
-}
+span{ color:#a78bfa; }
 
-/* ❤️ админка */
 #adminBtn{
   position:fixed;
   top:15px;
   left:15px;
   width:56px;
   height:56px;
-
   display:flex;
   align-items:center;
   justify-content:center;
-
   font-size:22px;
   cursor:pointer;
 
   background: rgba(167,139,250,0.15);
   backdrop-filter: blur(18px);
   border-radius:16px;
-
   border:1px solid rgba(167,139,250,0.35);
   color:#c4b5fd;
 }
@@ -177,7 +164,7 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-/* 🌊 ФИЗИКА — НЕ ТРОГАЛАСЬ (ВАЖНО) */
+/* 🌊 ФИЗИКА НЕ ИЗМЕНЕНА */
 let blobs=[];
 
 for(let i=0;i<10;i++){
@@ -245,12 +232,13 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    /* 💧 мягкий градиент БЕЗ жёстких краёв */
+    /* 🌈 ИЗМЕНЁН ТОЛЬКО ГРАДИЕНТ */
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.28)");
-    g.addColorStop(0.3,"rgba(167,139,250,0.18)");
-    g.addColorStop(0.7,"rgba(99,102,241,0.10)");
+    g.addColorStop(0,"rgba(255,255,255,0.22)");
+    g.addColorStop(0.25,"rgba(196,181,253,0.35)");
+    g.addColorStop(0.55,"rgba(139,92,246,0.28)");
+    g.addColorStop(0.8,"rgba(99,102,241,0.15)");
     g.addColorStop(1,"rgba(0,0,0,0)");
 
     ctx.fillStyle=g;
@@ -307,8 +295,7 @@ adminBtn.onclick=async()=>{
 
 </body>
 </html>
-`);
-
+  `);
 });
 
 app.listen(3000, () => console.log("RUNNING"));
