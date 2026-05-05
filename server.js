@@ -45,7 +45,7 @@ function updateState() {
       state.index = Math.floor(Math.random() * 2);
       state.text = variants[state.index];
       state.nextChange = now + randomInterval();
-    } else return saveState(state);
+    }
   }
 
   if (state.mode === "auto" && now >= state.nextChange) {
@@ -74,14 +74,16 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
+/* ================= FRONT ================= */
+
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<style>
 
+<style>
 html,body{
   margin:0;
   height:100%;
@@ -89,14 +91,18 @@ html,body{
   font-family:Arial;
 }
 
+/* 💥 ЖЁСТКО ЗАФИКСИРОВАННЫЙ ФОН */
 body{
   background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
 }
 
+/* canvas НЕ может ломать UI */
 canvas{
   position:fixed;
   top:0;
   left:0;
+  z-index:0;
+  pointer-events:none;
 }
 
 .glass{
@@ -104,8 +110,9 @@ canvas{
   backdrop-filter: blur(16px);
   border-radius:28px;
   padding:34px 90px;
-  border:1px solid rgba(255,255,255,0.1);
+  border:1px solid rgba(255,255,255,0.12);
   box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  z-index:2;
 }
 
 h1{
@@ -115,7 +122,7 @@ h1{
   transform:translate(-50%,-50%);
   color:#e0e7ff;
   font-size:46px;
-  text-shadow:0 0 25px rgba(139,92,246,0.25);
+  z-index:2;
 }
 
 span{color:#a78bfa;}
@@ -134,6 +141,7 @@ span{color:#a78bfa;}
   background:rgba(255,255,255,0.05);
   backdrop-filter:blur(18px);
   border:1px solid rgba(255,255,255,0.12);
+  z-index:3;
   color:white;
 }
 </style>
@@ -147,6 +155,8 @@ span{color:#a78bfa;}
 <h1 class="glass">сейчас Ваня <span id="text">...</span></h1>
 
 <script>
+/* ================= SAFE CANVAS ================= */
+
 const c=document.getElementById("c");
 const ctx=c.getContext("2d");
 
@@ -157,16 +167,15 @@ function resize(){
 resize();
 onresize=resize;
 
-/* 🌊 СТАБИЛЬНАЯ ЖИДКОСТЬ (без слипания) */
 let blobs=[];
 
-// большие массы
+// большие
 for(let i=0;i<5;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
     vx:0,vy:0,
-    r:340+Math.random()*260
+    r:300+Math.random()*250
   });
 }
 
@@ -176,18 +185,18 @@ for(let i=0;i<6;i++){
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
     vx:0,vy:0,
-    r:120+Math.random()*120
+    r:100+Math.random()*120
   });
-}
+});
 
 // мелкие (почти прозрачные)
 for(let i=0;i<10;i++){
   blobs.push({
     x:Math.random()*innerWidth,
     y:Math.random()*innerHeight,
-    vx:(Math.random()-0.5)*0.6,
-    vy:(Math.random()-0.5)*0.6,
-    r:25+Math.random()*45
+    vx:(Math.random()-0.5)*0.5,
+    vy:(Math.random()-0.5)*0.5,
+    r:30+Math.random()*40
   });
 });
 
@@ -210,17 +219,12 @@ function draw(){
 
   for(let b of blobs){
 
-    // лёгкое движение
-    b.vx += (Math.random()-0.5)*0.01;
-    b.vy += (Math.random()-0.5)*0.01;
-
-    // палец тянет
     let dx=p.x-b.x;
     let dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
 
     if(d<900){
-      let f=(1-d/900)*0.018;
+      let f=(1-d/900)*0.02;
       b.vx+=dx*f;
       b.vy+=dy*f;
     }
@@ -231,15 +235,13 @@ function draw(){
     b.x+=b.vx;
     b.y+=b.vy;
 
-    /* 💧 МЯГКОЕ СВЕЧЕНИЕ (метаболл эффект без слипания) */
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(167,139,250,0.5)");
-    g.addColorStop(0.35,"rgba(139,92,246,0.18)");
+    g.addColorStop(0,"rgba(167,139,250,0.45)");
+    g.addColorStop(0.4,"rgba(139,92,246,0.18)");
     g.addColorStop(1,"rgba(0,0,0,0)");
 
     ctx.fillStyle=g;
-
     ctx.beginPath();
     ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
     ctx.fill();
@@ -249,16 +251,21 @@ function draw(){
 }
 draw();
 
-/* текст */
+/* ================= STATE ================= */
+
 async function load(){
-  let r=await fetch("/state");
-  let d=await r.json();
-  document.getElementById("text").textContent=d.text;
+  try{
+    let r=await fetch("/state");
+    let d=await r.json();
+    document.getElementById("text").textContent=d.text;
+  }catch(e){}
 }
+
 load();
 setInterval(load,1000);
 
-/* админка */
+/* ================= ADMIN ================= */
+
 adminBtn.onclick=async()=>{
   let pass=prompt("пароль");
   if(pass!=="4724")return;
@@ -287,4 +294,4 @@ adminBtn.onclick=async()=>{
   `);
 });
 
-app.listen(3000,()=>console.log("RUNNING"));
+app.listen(3000, () => console.log("RUNNING"));
