@@ -86,7 +86,7 @@ app.get("/", (req, res) => {
 <meta charset="UTF-8">
 
 <style>
-html, body{
+html,body{
   margin:0;
   padding:0;
   overflow:hidden;
@@ -94,18 +94,28 @@ html, body{
   font-family:Arial;
 }
 
-/* 🔥 ФОН (ЖЁСТКО ЗАФИКСИРОВАН, БЕЗ БЕЛИЗНЫ) */
+/* 🌌 ТВОЙ СТАБИЛЬНЫЙ ТЁМНЫЙ ФОН */
 body{
-  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 65%, #050816);
+  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
 }
 
-/* canvas НЕ влияет на фон */
+/* canvas */
 canvas{
   position:fixed;
   top:0;
   left:0;
   z-index:0;
-  pointer-events:none;
+}
+
+/* 💎 стекло */
+.glass{
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:20px;
+  padding:20px 40px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
 }
 
 /* текст */
@@ -114,8 +124,8 @@ h1{
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  font-size:42px;
   color:#e0e7ff;
+  font-size:42px;
   z-index:2;
 }
 
@@ -123,25 +133,13 @@ span{
   color:#a78bfa;
 }
 
-/* 💎 стекло (без выбеливания!) */
-.glass{
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius:20px;
-  box-shadow:
-    inset 0 0 25px rgba(255,255,255,0.05),
-    0 10px 40px rgba(0,0,0,0.6);
-}
-
-/* ❤️ кнопка стеклянная */
+/* ❤️ стеклянная кнопка */
 #adminBtn{
   position:fixed;
   top:15px;
   left:15px;
-  width:55px;
-  height:55px;
+  width:54px;
+  height:54px;
 
   display:flex;
   align-items:center;
@@ -149,20 +147,16 @@ span{
 
   font-size:22px;
   cursor:pointer;
+  color:rgba(255,255,255,0.9);
 
-  color:rgba(255,255,255,0.85);
-
-  /* стекло */
   background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 
-  border:1px solid rgba(255,255,255,0.15);
-  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:14px;
 
-  box-shadow:
-    inset 0 0 20px rgba(255,255,255,0.08),
-    0 10px 30px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 </style>
 </head>
@@ -186,13 +180,13 @@ function resize(){
 resize();
 onresize = resize;
 
-/* 🌊 ЖИВАЯ ВОДА (оставлена, но НЕ ломает фон) */
-let blobs = Array.from({length:6}, () => ({
+/* 🧈 ЖИДКАЯ ВОДА (METABALLS) */
+let blobs = Array.from({length:8}, () => ({
   x: Math.random()*innerWidth,
   y: Math.random()*innerHeight,
-  vx:(Math.random()-0.5)*0.5,
-  vy:(Math.random()-0.5)*0.5,
-  r:220 + Math.random()*120
+  vx:(Math.random()-0.5)*0.6,
+  vy:(Math.random()-0.5)*0.6,
+  r:120 + Math.random()*120
 }));
 
 let pointer = null;
@@ -209,7 +203,10 @@ window.addEventListener("touchmove",e=>{
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  blobs.forEach(b=>{
+  ctx.globalCompositeOperation = "lighter";
+
+  for(let i=0;i<blobs.length;i++){
+    let b = blobs[i];
 
     b.x += b.vx;
     b.y += b.vy;
@@ -217,29 +214,55 @@ function draw(){
     b.vx += (Math.random()-0.5)*0.03;
     b.vy += (Math.random()-0.5)*0.03;
 
-    b.vx *= 0.98;
-    b.vy *= 0.98;
+    b.vx *= 0.96;
+    b.vy *= 0.96;
 
+    // реакция на касание
     if(pointer){
-      let dx = pointer.x - b.x;
-      let dy = pointer.y - b.y;
-      let d = Math.sqrt(dx*dx + dy*dy);
+      let dx = b.x - pointer.x;
+      let dy = b.y - pointer.y;
+      let dist = Math.sqrt(dx*dx + dy*dy);
 
-      if(d < 220){
-        b.vx -= dx * 0.002;
-        b.vy -= dy * 0.002;
+      if(dist < 220){
+        b.vx += dx * 0.002;
+        b.vy += dy * 0.002;
+      }
+    }
+
+    // взаимодействие (слияние как жидкость)
+    for(let j=0;j<blobs.length;j++){
+      if(i===j) continue;
+      let b2 = blobs[j];
+
+      let dx = b2.x - b.x;
+      let dy = b2.y - b.y;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+
+      if(dist < 180){
+        let force = (1 - dist/180)*0.015;
+        b.vx += dx * force;
+        b.vy += dy * force;
       }
     }
 
     const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
-    g.addColorStop(0,"rgba(139,92,246,0.40)");
+    g.addColorStop(0,"rgba(139,92,246,0.55)");
+    g.addColorStop(0.5,"rgba(99,102,241,0.25)");
     g.addColorStop(1,"transparent");
 
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+    ctx.ellipse(
+      b.x,
+      b.y,
+      b.r*1.2,
+      b.r*0.8,
+      Math.sin(b.x*0.01),
+      0,
+      Math.PI*2
+    );
     ctx.fill();
-  });
+  }
 
   requestAnimationFrame(draw);
 }
