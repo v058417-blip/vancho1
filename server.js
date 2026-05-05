@@ -6,7 +6,6 @@ const app = express();
 app.use(express.json());
 
 const FILE = path.join(__dirname, "state.json");
-
 const variants = ["натурал", "гомосек"];
 
 function randomInterval() {
@@ -100,23 +99,22 @@ canvas{
   inset:0;
 }
 
-/* 📦 ТАБЛИЧКА (уменьшена + воздух по краям) */
+/* 📦 ТАБЛИЧКА — теперь просторная */
 .glass{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
 
-  width:76vw;           /* ↓ БЫЛО 82vw → стало меньше */
-  max-width:900px;
+  width:78vw;
+  max-width:1100px;
+
+  padding:70px 80px;
 
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(18px);
 
   border-radius:34px;
-
-  padding:78px 100px;
-
   border:1px solid rgba(255,255,255,0.10);
 
   text-align:center;
@@ -125,9 +123,8 @@ canvas{
 /* 🔤 текст чуть крупнее */
 h1{
   margin:0;
+  font-size:64px;
   color:#e0e7ff;
-
-  font-size: clamp(54px, 5vw, 80px); /* ↑ немного увеличен */
   line-height:1.1;
 }
 
@@ -135,7 +132,7 @@ span{
   color:#a78bfa;
 }
 
-/* ❤️ админка (без изменений) */
+/* ❤️ админка */
 #adminBtn{
   position:fixed;
   top:15px;
@@ -150,7 +147,7 @@ span{
   font-size:22px;
   cursor:pointer;
 
-  background: rgba(167,139,250,0.18);
+  background: rgba(167,139,250,0.15);
   backdrop-filter: blur(18px);
   border-radius:16px;
 
@@ -180,7 +177,7 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-/* 🌊 ФИЗИКА ВОДЫ — НЕ ИЗМЕНЯЛАСЬ (твоя любимая) */
+/* 🌊 ФИЗИКА — НЕ ТРОГАЛАСЬ (ВАЖНО) */
 let blobs=[];
 
 for(let i=0;i<10;i++){
@@ -248,12 +245,13 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
+    /* 💧 мягкий градиент БЕЗ жёстких краёв */
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.30)");
-    g.addColorStop(0.25,"rgba(180,150,255,0.22)");
-    g.addColorStop(0.6,"rgba(139,92,246,0.15)");
-    g.addColorStop(1,"rgba(10,10,30,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.28)");
+    g.addColorStop(0.3,"rgba(167,139,250,0.18)");
+    g.addColorStop(0.7,"rgba(99,102,241,0.10)");
+    g.addColorStop(1,"rgba(0,0,0,0)");
 
     ctx.fillStyle=g;
 
@@ -263,7 +261,7 @@ function draw(){
       b.y,
       b.r,
       b.r*0.75,
-      Math.sin(i+ t)*0.2,
+      Math.sin(i+t)*0.2,
       0,
       Math.PI*2
     );
