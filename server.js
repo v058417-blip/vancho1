@@ -1,32 +1,70 @@
 const express = require("express");
-const app = express();
+const fs = require("fs");
+const path = require("path");
 
+const app = express();
 app.use(express.json());
 
-let state = {
-  mode: "auto",
-  text: Math.random() > 0.5 ? "натурал" : "гомосек",
-  until: null
-};
+const FILE = path.join(__dirname, "state.json");
 
-// логика
-setInterval(() => {
+const variants = ["натурал", "гомосек"];
+
+function randomInterval() {
+  return 60000 + Math.random() * (3 * 24 * 60 * 60 * 1000);
+}
+
+function loadState() {
+  try {
+    return JSON.parse(fs.readFileSync(FILE, "utf8"));
+  } catch {
+    const index = Math.floor(Math.random() * 2);
+    const state = {
+      mode: "auto",
+      index,
+      text: variants[index],
+      nextChange: Date.now() + randomInterval(),
+      until: null
+    };
+    fs.writeFileSync(FILE, JSON.stringify(state));
+    return state;
+  }
+}
+
+function saveState(s) {
+  fs.writeFileSync(FILE, JSON.stringify(s));
+}
+
+let state = loadState();
+
+function updateState() {
   const now = Date.now();
 
   if (state.mode === "manual") {
     if (now >= state.until) {
       state.mode = "auto";
-      state.text = Math.random() > 0.5 ? "натурал" : "гомосек";
-    }
-  } else {
-    if (Math.random() < 0.05) {
-      state.text = Math.random() > 0.5 ? "натурал" : "гомосек";
+      state.index = Math.floor(Math.random() * 2);
+      state.text = variants[state.index];
+      state.nextChange = now + randomInterval();
+    } else {
+      saveState(state);
+      return;
     }
   }
-}, 1000);
+
+  if (state.mode === "auto" && now >= state.nextChange) {
+    state.index = state.index === 0 ? 1 : 0;
+    state.text = variants[state.index];
+    state.nextChange = now + randomInterval();
+  }
+
+  saveState(state);
+}
+
+setInterval(updateState, 1000);
 
 // API
 app.get("/state", (req, res) => {
+  updateState();
   res.json(state);
 });
 
@@ -37,10 +75,12 @@ app.post("/update", (req, res) => {
   state.text = text;
   state.until = Date.now() + ms;
 
+  saveState(state);
+
   res.json({ ok: true });
 });
 
-// САЙТ
+// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -52,18 +92,26 @@ app.get("/", (req, res) => {
 body{
   margin:0;
   overflow:hidden;
-  background:#0b1020;
   font-family:Arial;
-  color:white;
+  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
 }
 
-/* текст */
+/* canvas */
+canvas{
+  position:fixed;
+  top:0;
+  left:0;
+  z-index:0;
+}
+
+/* текст поверх */
 h1{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  font-size:40px;
+  color:#e0e7ff;
+  font-size:48px;
   z-index:2;
 }
 
@@ -71,8 +119,7 @@ span{
   color:#a78bfa;
 }
 
-/* кнопка */
-#btn{
+#adminBtn{
   position:fixed;
   top:10px;
   left:10px;
@@ -81,22 +128,15 @@ span{
   background:rgba(255,255,255,0.1);
   z-index:3;
 }
-
-/* canvas */
-canvas{
-  position:fixed;
-  top:0;
-  left:0;
-}
 </style>
 </head>
 
 <body>
 
 <canvas id="c"></canvas>
-<div id="btn"></div>
+<div id="adminBtn"></div>
 
-<h1>сейчас Ваня <span id="t">...</span></h1>
+<h1>сейчас Ваня <span id="text">...</span></h1>
 
 <script>
 const canvas = document.getElementById("c");
@@ -109,30 +149,32 @@ function resize(){
 resize();
 onresize = resize;
 
-/* 💜 ФИОЛЕТОВЫЕ "ЖИВЫЕ ПЯТНА" */
-let blobs = Array.from({length:5}, () => ({
+/* 💜 ЖИВАЯ ВОДА (мягкая, переливающаяся) */
+let blobs = Array.from({length:6}, () => ({
   x: Math.random()*innerWidth,
   y: Math.random()*innerHeight,
-  vx:(Math.random()-0.5)*0.3,
-  vy:(Math.random()-0.5)*0.3,
-  r:200 + Math.random()*150
+  vx:(Math.random()-0.5)*0.4,
+  vy:(Math.random()-0.5)*0.4,
+  r:200 + Math.random()*160
 }));
 
-function draw(){
+function animate(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   blobs.forEach(b=>{
+
+    // хаотичное движение
+    b.vx += (Math.random()-0.5)*0.02;
+    b.vy += (Math.random()-0.5)*0.02;
+
+    b.vx *= 0.98;
+    b.vy *= 0.98;
+
     b.x += b.vx;
     b.y += b.vy;
 
-    // мягкое движение
-    b.vx += (Math.random()-0.5)*0.01;
-    b.vy += (Math.random()-0.5)*0.01;
-
-    b.vx *= 0.99;
-    b.vy *= 0.99;
-
     const g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+
     g.addColorStop(0,"rgba(139,92,246,0.35)");
     g.addColorStop(0.5,"rgba(99,102,241,0.25)");
     g.addColorStop(1,"transparent");
@@ -143,32 +185,35 @@ function draw(){
     ctx.fill();
   });
 
-  requestAnimationFrame(draw);
+  requestAnimationFrame(animate);
 }
-draw();
+animate();
 
 /* текст */
 async function load(){
-  try{
-    const r = await fetch("/state");
-    const d = await r.json();
-    document.getElementById("t").textContent = d.text;
-  }catch{
-    document.getElementById("t").textContent = "ошибка";
-  }
+  const r = await fetch("/state");
+  const d = await r.json();
+  document.getElementById("text").textContent = d.text;
 }
 load();
 setInterval(load,1000);
 
 /* админка */
-btn.onclick = async ()=>{
+adminBtn.onclick = async ()=>{
   const pass = prompt("пароль");
   if(pass !== "4724") return;
 
   const text = prompt("текст");
-  const sec = prompt("секунды");
 
-  const ms = Number(sec) * 1000;
+  const choice = prompt("1 - секунды\\n2 - минуты\\n3 - часы");
+
+  let mult = 1000;
+  if(choice === "2") mult = 60000;
+  if(choice === "3") mult = 3600000;
+
+  const value = prompt("число");
+
+  const ms = Number(value) * mult;
 
   await fetch("/update",{
     method:"POST",
@@ -185,4 +230,4 @@ btn.onclick = async ()=>{
   `);
 });
 
-app.listen(3000, () => console.log("OK"));
+app.listen(3000, () => console.log("RUNNING"));
