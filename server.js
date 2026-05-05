@@ -13,7 +13,6 @@ function randomInterval() {
   return 60000 + Math.random() * (3 * 24 * 60 * 60 * 1000);
 }
 
-// 👉 ВСЕГДА новый старт (решает проблему "всегда натурал")
 function createFreshState() {
   const index = Math.floor(Math.random() * 2);
   return {
@@ -27,16 +26,7 @@ function createFreshState() {
 
 function loadState() {
   try {
-    const data = JSON.parse(fs.readFileSync(FILE, "utf8"));
-
-    // защита от залипания
-    if (!data || !variants.includes(data.text)) {
-      const fresh = createFreshState();
-      fs.writeFileSync(FILE, JSON.stringify(fresh));
-      return fresh;
-    }
-
-    return data;
+    return JSON.parse(fs.readFileSync(FILE, "utf8"));
   } catch {
     const fresh = createFreshState();
     fs.writeFileSync(FILE, JSON.stringify(fresh));
@@ -48,7 +38,7 @@ function saveState(s) {
   fs.writeFileSync(FILE, JSON.stringify(s));
 }
 
-let state = createFreshState(); // 👉 КЛЮЧ: не используем старое при запуске
+let state = createFreshState();
 
 function updateState() {
   const now = Date.now();
@@ -72,9 +62,7 @@ function updateState() {
 setInterval(updateState, 1000);
 
 // API
-app.get("/state", (req, res) => {
-  res.json(state);
-});
+app.get("/state", (req, res) => res.json(state));
 
 app.post("/update", (req, res) => {
   const { text, ms } = req.body;
@@ -117,8 +105,8 @@ canvas{
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-  width:min(92vw,1200px); /* 👉 чуть шире */
-  padding:34px 90px;
+  width:min(88vw,1000px); /* ← уменьшено аккуратно */
+  padding:34px 80px;
 
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
@@ -207,32 +195,6 @@ function flow(x,y,t){
   return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
 }
 
-// 👉 мягкое отображение без скачков
-function drawBlob(b, t, ox=0, oy=0){
-  let x = b.x + ox;
-  let y = b.y + oy;
-
-  let g = ctx.createRadialGradient(x,y,0,x,y,b.r);
-
-  g.addColorStop(0,"rgba(255,255,255,0.28)");
-  g.addColorStop(0.4,"rgba(167,139,250,0.22)");
-  g.addColorStop(1,"rgba(5,8,22,0)");
-
-  ctx.fillStyle = g;
-
-  ctx.beginPath();
-  ctx.ellipse(
-    x,
-    y,
-    b.r,
-    b.r*0.75,
-    Math.sin(t)*0.2,
-    0,
-    Math.PI*2
-  );
-  ctx.fill();
-}
-
 function draw(){
   ctx.clearRect(0,0,c.width,c.height);
   ctx.globalCompositeOperation = "lighter";
@@ -279,16 +241,31 @@ function draw(){
     b.ax *= 0.5;
     b.ay *= 0.5;
 
-    let w = innerWidth;
-    let h = innerHeight;
+    // 👉 НОРМАЛЬНЫЙ wrap без артефактов
+    if(b.x < 0) b.x = innerWidth;
+    if(b.x > innerWidth) b.x = 0;
+    if(b.y < 0) b.y = innerHeight;
+    if(b.y > innerHeight) b.y = 0;
 
-    drawBlob(b,t,0,0);
+    let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    // 👉 плавные края без рывков
-    if(b.x < b.r) drawBlob(b,t,w,0);
-    if(b.x > w-b.r) drawBlob(b,t,-w,0);
-    if(b.y < b.r) drawBlob(b,t,0,h);
-    if(b.y > h-b.r) drawBlob(b,t,0,-h);
+    g.addColorStop(0,"rgba(255,255,255,0.28)");
+    g.addColorStop(0.4,"rgba(167,139,250,0.22)");
+    g.addColorStop(1,"rgba(5,8,22,0)");
+
+    ctx.fillStyle = g;
+
+    ctx.beginPath();
+    ctx.ellipse(
+      b.x,
+      b.y,
+      b.r,
+      b.r*0.75,
+      Math.sin(i+t)*0.2,
+      0,
+      Math.PI*2
+    );
+    ctx.fill();
   }
 
   requestAnimationFrame(draw);
