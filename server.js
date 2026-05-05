@@ -100,33 +100,33 @@ canvas{
   inset:0;
 }
 
-/* 📦 УВЕЛИЧЕННАЯ ТАБЛИЧКА */
+/* 📦 ТАБЛИЧКА (УМЕНЬШЕНА) */
 .glass{
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
 
-  width:90vw;
-  max-width:1100px;
+  width:82vw;            /* ↓ было 90vw */
+  max-width:980px;       /* ↓ было 1100px */
 
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(18px);
 
   border-radius:34px;
 
-  padding:80px 110px;
+  padding:70px 90px;     /* чуть компактнее */
 
   border:1px solid rgba(255,255,255,0.10);
 
   text-align:center;
 }
 
-/* 🔤 ПРОПОРЦИОНАЛЬНЫЙ ТЕКСТ */
+/* 🔤 текст чуть крупнее */
 h1{
   margin:0;
   color:#e0e7ff;
-  font-size: clamp(46px, 4.5vw, 72px);
+  font-size: clamp(50px, 4.8vw, 76px);
   line-height:1.1;
 }
 
@@ -179,7 +179,7 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-// 🌊 жидкость (НЕ МЕНЯЛ)
+/* 🌊 ЛЮБИМАЯ ФИЗИКА (ВОЗВРАЩЕНА) */
 let blobs=[];
 
 for(let i=0;i<10;i++){
@@ -220,9 +220,11 @@ function draw(){
   for(let i=0;i<blobs.length;i++){
     let b=blobs[i];
 
+    // 🌪 вихрь
     b.ax += flow(b.x,b.y,t)*0.4;
     b.ay += flow(b.y,b.x,t)*0.4;
 
+    // 👆 палец
     let dx=p.x-b.x;
     let dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
@@ -233,6 +235,7 @@ function draw(){
       b.ay+=dy*f;
     }
 
+    // 🧠 вязкость
     b.vx=(b.vx+b.ax)*0.9;
     b.vy=(b.vy+b.ay)*0.9;
 
@@ -242,18 +245,19 @@ function draw(){
     b.ax*=0.5;
     b.ay*=0.5;
 
+    // wrap
     if(b.x<0)b.x=innerWidth;
     if(b.x>innerWidth)b.x=0;
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    // 💜 ОБНОВЛЁННЫЙ ГРАДИЕНТ (фиолет + тёмный фиолет)
+    // 💜 мягкий градиент (как раньше)
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.28)");
-    g.addColorStop(0.2,"rgba(190,170,255,0.25)");
-    g.addColorStop(0.55,"rgba(139,92,246,0.18)");
-    g.addColorStop(1,"rgba(40,20,80,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.30)");
+    g.addColorStop(0.25,"rgba(180,150,255,0.22)");
+    g.addColorStop(0.6,"rgba(139,92,246,0.15)");
+    g.addColorStop(1,"rgba(10,10,30,0)");
 
     ctx.fillStyle=g;
 
@@ -274,7 +278,7 @@ function draw(){
 }
 draw();
 
-// TEXT
+/* TEXT */
 async function load(){
   let r=await fetch("/state");
   let d=await r.json();
@@ -283,7 +287,7 @@ async function load(){
 load();
 setInterval(load,1000);
 
-// ADMIN
+/* ADMIN */
 adminBtn.onclick=async()=>{
   let pass=prompt("пароль");
   if(pass!=="4724")return;
@@ -310,7 +314,6 @@ adminBtn.onclick=async()=>{
 </body>
 </html>
 `);
-
 });
 
 app.listen(3000, () => console.log("RUNNING"));
