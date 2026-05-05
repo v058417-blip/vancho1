@@ -100,19 +100,28 @@ canvas{
   inset:0;
 }
 
+/* 🌟 РАСТЯНУТАЯ ТАБЛИЧКА */
 .glass{
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(16px);
   border-radius:28px;
-  padding:34px 90px;
-  border:1px solid rgba(255,255,255,0.10);
-}
 
-h1{
+  width: calc(100% - 120px);
+  max-width: 1700px;
+
+  padding:34px 90px;
+
+  border:1px solid rgba(255,255,255,0.10);
+
   position:absolute;
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
+}
+
+h1{
+  margin:0;
+  text-align:center;
   color:#e0e7ff;
   font-size:69px;
 }
@@ -241,12 +250,13 @@ function draw(){
     if(b.y<0)b.y=innerHeight;
     if(b.y>innerHeight)b.y=0;
 
-    // 💜 УСИЛЕННЫЙ ГРАДИЕНТ (ТОЛЬКО ЭТО ИЗМЕНЕНО)
+    // 💜 мягкий градиент БЕЗ жёсткого края
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.26)");
-    g.addColorStop(0.4,"rgba(167,139,250,0.22)");
-    g.addColorStop(1,"rgba(0,0,0,0)");
+    g.addColorStop(0,"rgba(255,255,255,0.22)");
+    g.addColorStop(0.4,"rgba(167,139,250,0.18)");
+    g.addColorStop(0.85,"rgba(5,8,22,0.05)");
+    g.addColorStop(1,"rgba(5,8,22,0)");
 
     ctx.fillStyle = g;
 
