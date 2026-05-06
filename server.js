@@ -261,9 +261,16 @@ function draw(){
 
     let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(255,255,255,0.28)");
-    g.addColorStop(0.4,"rgba(167,139,250,0.22)");
-    g.addColorStop(1,"rgba(5,8,22,0)");
+// мягкий фиолетовый центр вместо белого
+g.addColorStop(0,"rgba(196,181,253,0.28)");
+
+// усиленный, но не кислотный фиолет
+g.addColorStop(0.35,"rgba(167,139,250,0.25)");
+
+// плавное затухание с оттенком
+g.addColorStop(0.75,"rgba(139,92,246,0.12)");
+
+g.addColorStop(1,"rgba(5,8,22,0)");
 
     ctx.fillStyle = g;
 
