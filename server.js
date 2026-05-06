@@ -108,15 +108,72 @@ canvas{
   left:50%;
   transform:translate(-50%,-50%);
 
-  /* 👉 ИЗМЕНЕНО ТОЛЬКО ЭТО */
   width:min(80vw,920px);
+  padding:36px 80px;
 
-  padding:34px 80px;
+  border-radius:32px;
 
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(16px);
-  border-radius:28px;
-  border:1px solid rgba(255,255,255,0.10);
+  /* ОСНОВА СТЕКЛА */
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.10),
+    rgba(255,255,255,0.02)
+  );
+
+  backdrop-filter: blur(30px) saturate(140%);
+  -webkit-backdrop-filter: blur(30px) saturate(140%);
+
+  border: 1px solid rgba(255,255,255,0.18);
+
+  /* ГЛУБИНА */
+  box-shadow:
+    0 8px 40px rgba(0,0,0,0.45),
+    inset 0 1px 1px rgba(255,255,255,0.25),
+    inset 0 -2px 12px rgba(167,139,250,0.25);
+
+  position: relative;
+  overflow: hidden;
+}
+
+/* ✨ бликовый слой */
+.glass::before{
+  content:"";
+  position:absolute;
+  inset:0;
+
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(255,255,255,0.35),
+    transparent 60%
+  );
+
+  opacity:0.6;
+  pointer-events:none;
+
+  animation: shine 6s ease-in-out infinite;
+}
+
+/* 🌑 глубина снизу */
+.glass::after{
+  content:"";
+  position:absolute;
+  inset:0;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.15),
+    transparent 40%,
+    rgba(0,0,0,0.25)
+  );
+
+  opacity:0.5;
+  pointer-events:none;
+}
+
+/* 🔥 лёгкое движение света */
+@keyframes shine{
+  0%,100%{ transform: translateX(0); }
+  50%{ transform: translateX(40px); }
 }
 
 h1{
@@ -275,16 +332,27 @@ g.addColorStop(1,"rgba(5,8,22,0)");
     ctx.fillStyle = g;
 
     ctx.beginPath();
-    ctx.ellipse(
-      b.x,
-      b.y,
-      b.r,
-      b.r*0.75,
-      Math.sin(i+t)*0.2,
-      0,
-      Math.PI*2
-    );
-    ctx.fill();
+
+let points = 24;
+for(let k = 0; k <= points; k++){
+  let angle = (k / points) * Math.PI * 2;
+
+  // шум для "жидкости"
+  let noise =
+    Math.sin(angle * 3 + t + i) * 0.15 +
+    Math.cos(angle * 5 + t * 0.7) * 0.1;
+
+  let radius = b.r * (1 + noise);
+
+  let x = b.x + Math.cos(angle) * radius;
+  let y = b.y + Math.sin(angle) * radius * 0.75;
+
+  if(k === 0) ctx.moveTo(x, y);
+  else ctx.lineTo(x, y);
+}
+
+ctx.closePath();
+ctx.fill();
   }
 
   requestAnimationFrame(draw);
