@@ -39,6 +39,8 @@ function saveState(s) {
 }
 
 let state = loadState();
+updateState();
+saveState(state);
 
 function updateState() {
   const now = Date.now();
