@@ -63,7 +63,6 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
-// API
 app.get("/state", (req, res) => res.json(state));
 
 app.post("/update", (req, res) => {
@@ -77,7 +76,6 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
-// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -93,7 +91,7 @@ html,body{
 }
 
 body{
-  background: radial-gradient(circle at 30% 30%, #1e1b4b, #0b1020 60%, #050816);
+  background: radial-gradient(circle at 30% 30%, #120a2a, #070812 60%, #04040a);
 }
 
 canvas{
@@ -119,41 +117,7 @@ canvas{
   -webkit-backdrop-filter: blur(30px) saturate(140%);
 
   border:1px solid rgba(255,255,255,0.18);
-
-  box-shadow:
-    0 8px 40px rgba(0,0,0,0.45),
-    inset 0 1px 1px rgba(255,255,255,0.25),
-    inset 0 -2px 12px rgba(167,139,250,0.25);
-
-  overflow:hidden;
-}
-
-.glass::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), transparent 60%);
-  opacity:0.6;
-  pointer-events:none;
-  animation: shine 6s ease-in-out infinite;
-}
-
-.glass::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background: linear-gradient(to bottom,
-    rgba(255,255,255,0.15),
-    transparent 40%,
-    rgba(0,0,0,0.25)
-  );
-  opacity:0.5;
-  pointer-events:none;
-}
-
-@keyframes shine{
-  0%,100%{ transform: translateX(0); }
-  50%{ transform: translateX(40px); }
+  box-shadow:0 8px 40px rgba(0,0,0,0.45);
 }
 
 h1{
@@ -197,6 +161,7 @@ span{ color:#a78bfa; }
 <script>
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
+
 const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
 function resize(){
@@ -206,18 +171,19 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
+/* МЯГКИЕ ПЛАВАЮЩИЕ ОБЛАКА */
 let blobs = [];
-const count = isMobile ? 6 : 10;
+const count = isMobile ? 14 : 18;
 
 for(let i=0;i<count;i++){
   blobs.push({
     x: Math.random()*innerWidth,
     y: Math.random()*innerHeight,
-    vx:(Math.random()-0.5)*1.2,
-    vy:(Math.random()-0.5)*1.2,
+    vx:(Math.random()-0.5)*0.6,
+    vy:(Math.random()-0.5)*0.6,
     ax:0,
     ay:0,
-    r: isMobile ? (140 + Math.random()*220) : (180 + Math.random()*320)
+    r: isMobile ? (220 + Math.random()*260) : (260 + Math.random()*340)
   });
 }
 
@@ -234,8 +200,13 @@ addEventListener("touchmove", e=>{
   p.y = t.clientY;
 });
 
+/* ПЛАВНАЯ СМЕНА ЦВЕТОВ */
+function hueShift(t, i){
+  return 280 + Math.sin(t*0.1 + i)*40; 
+}
+
 function flow(x,y,t){
-  return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
+  return Math.sin(x*0.002+t)*Math.cos(y*0.002-t);
 }
 
 function boundary(b){
@@ -252,13 +223,15 @@ function draw(){
   ctx.clearRect(0,0,c.width,c.height);
   ctx.globalCompositeOperation="lighter";
 
-  let t=Date.now()*0.001;
+  let t = Date.now()*0.001;
+
+  ctx.filter = isMobile ? "blur(30px)" : "blur(40px)";
 
   for(let i=0;i<blobs.length;i++){
     let b=blobs[i];
 
-    b.ax+=flow(b.x,b.y,t)*0.4;
-    b.ay+=flow(b.y,b.x,t)*0.4;
+    b.ax+=flow(b.x,b.y,t)*0.3;
+    b.ay+=flow(b.y,b.x,t)*0.3;
 
     let dx=p.x-b.x, dy=p.y-b.y;
     let d=Math.sqrt(dx*dx+dy*dy);
@@ -269,23 +242,10 @@ function draw(){
       b.ay+=dy*f;
     }
 
-    for(let j=0;j<blobs.length;j+=isMobile?2:1){
-      if(i===j) continue;
-      let o=blobs[j];
-      let dx2=b.x-o.x, dy2=b.y-o.y;
-      let dist=Math.sqrt(dx2*dx2+dy2*dy2);
-
-      if(dist<260){
-        let k=(1-dist/260);
-        b.ax+=dx2*k*0.02;
-        b.ay+=dy2*k*0.02;
-      }
-    }
-
     boundary(b);
 
-    b.vx=(b.vx+b.ax)*0.9;
-    b.vy=(b.vy+b.ay)*0.9;
+    b.vx=(b.vx+b.ax)*0.92;
+    b.vy=(b.vy+b.ay)*0.92;
 
     b.x+=b.vx;
     b.y+=b.vy;
@@ -293,48 +253,20 @@ function draw(){
     b.ax*=0.5;
     b.ay*=0.5;
 
+    /* 🌈 ЦВЕТА: фиолет → розовый → голубой */
+    let hue = hueShift(t, i);
+
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-    g.addColorStop(0,"rgba(196,181,253,0.28)");
-    g.addColorStop(0.35,"rgba(167,139,250,0.25)");
-    g.addColorStop(0.75,"rgba(139,92,246,0.12)");
+    g.addColorStop(0,`hsla(${hue}, 80%, 75%, 0.30)`);
+    g.addColorStop(0.4,`hsla(${hue+20}, 70%, 70%, 0.18)`);
     g.addColorStop(1,"rgba(5,8,22,0)");
 
     ctx.fillStyle=g;
 
     ctx.beginPath();
-
-let points = isMobile ? 18 : 24;
-
-let prevX, prevY;
-
-for (let k = 0; k <= points + 2; k++) {
-  let a = (k / points) * Math.PI * 2;
-
-  let noise =
-    Math.sin(a * 3 + t + i) * 0.18 +
-    Math.cos(a * 5 + t * 0.7) * 0.12;
-
-  let r = b.r * (1 + noise);
-
-  let x = b.x + Math.cos(a) * r;
-  let y = b.y + Math.sin(a) * r * 0.75;
-
-  if (k === 0) {
-    ctx.moveTo(x, y);
-  } else {
-    // сглаживание вместо рваных линий
-    let cx = (prevX + x) / 2;
-    let cy = (prevY + y) / 2;
-    ctx.quadraticCurveTo(prevX, prevY, cx, cy);
-  }
-
-  prevX = x;
-  prevY = y;
-}
-
-ctx.closePath();
-ctx.fill();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+    ctx.fill();
   }
 
   requestAnimationFrame(draw);
