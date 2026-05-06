@@ -304,26 +304,37 @@ function draw(){
 
     ctx.beginPath();
 
-    let points=isMobile?18:24;
+let points = isMobile ? 18 : 24;
 
-    for(let k=0;k<=points;k++){
-      let a=(k/points)*Math.PI*2;
+let prevX, prevY;
 
-      let noise=
-        Math.sin(a*3+t+i)*0.15+
-        Math.cos(a*5+t*0.7)*0.1;
+for (let k = 0; k <= points + 2; k++) {
+  let a = (k / points) * Math.PI * 2;
 
-      let r=b.r*(1+noise);
+  let noise =
+    Math.sin(a * 3 + t + i) * 0.18 +
+    Math.cos(a * 5 + t * 0.7) * 0.12;
 
-      let x=b.x+Math.cos(a)*r;
-      let y=b.y+Math.sin(a)*r*0.75;
+  let r = b.r * (1 + noise);
 
-      if(k===0) ctx.moveTo(x,y);
-      else ctx.lineTo(x,y);
-    }
+  let x = b.x + Math.cos(a) * r;
+  let y = b.y + Math.sin(a) * r * 0.75;
 
-    ctx.closePath();
-    ctx.fill();
+  if (k === 0) {
+    ctx.moveTo(x, y);
+  } else {
+    // сглаживание вместо рваных линий
+    let cx = (prevX + x) / 2;
+    let cy = (prevY + y) / 2;
+    ctx.quadraticCurveTo(prevX, prevY, cx, cy);
+  }
+
+  prevX = x;
+  prevY = y;
+}
+
+ctx.closePath();
+ctx.fill();
   }
 
   requestAnimationFrame(draw);
