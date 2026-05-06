@@ -13,8 +13,9 @@ function randomInterval() {
   return 60000 + Math.random() * (3 * 24 * 60 * 60 * 1000);
 }
 
-function createFreshState() {
-  const index = Math.floor(Math.random() * 2);
+function createState() {
+  const index = Math.random() < 0.5 ? 0 : 1;
+
   return {
     mode: "auto",
     index,
@@ -28,9 +29,9 @@ function loadState() {
   try {
     return JSON.parse(fs.readFileSync(FILE, "utf8"));
   } catch {
-    const fresh = createFreshState();
-    fs.writeFileSync(FILE, JSON.stringify(fresh));
-    return fresh;
+    const s = createState();
+    fs.writeFileSync(FILE, JSON.stringify(s));
+    return s;
   }
 }
 
@@ -39,7 +40,6 @@ function saveState(s) {
 }
 
 let state = loadState();
-updateState();
 saveState(state);
 
 function updateState() {
@@ -47,7 +47,7 @@ function updateState() {
 
   if (state.mode === "manual") {
     if (state.until && now >= state.until) {
-      state = createFreshState();
+      state = createState();
       saveState(state);
     }
     return;
@@ -83,8 +83,7 @@ app.get("/", (req, res) => {
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-
+<meta charset="UTF-8" />
 <style>
 html,body{
   margin:0;
@@ -107,15 +106,11 @@ canvas{
   top:50%;
   left:50%;
   transform:translate(-50%,-50%);
-
   width:min(80vw,920px);
   padding:36px 80px;
-
   border-radius:32px;
 
-  /* ОСНОВА СТЕКЛА */
-  background: linear-gradient(
-    135deg,
+  background: linear-gradient(135deg,
     rgba(255,255,255,0.10),
     rgba(255,255,255,0.02)
   );
@@ -123,54 +118,39 @@ canvas{
   backdrop-filter: blur(30px) saturate(140%);
   -webkit-backdrop-filter: blur(30px) saturate(140%);
 
-  border: 1px solid rgba(255,255,255,0.18);
+  border:1px solid rgba(255,255,255,0.18);
 
-  /* ГЛУБИНА */
   box-shadow:
     0 8px 40px rgba(0,0,0,0.45),
     inset 0 1px 1px rgba(255,255,255,0.25),
     inset 0 -2px 12px rgba(167,139,250,0.25);
 
-  position: relative;
-  overflow: hidden;
+  overflow:hidden;
 }
 
-/* ✨ бликовый слой */
 .glass::before{
   content:"";
   position:absolute;
   inset:0;
-
-  background: radial-gradient(
-    circle at 30% 20%,
-    rgba(255,255,255,0.35),
-    transparent 60%
-  );
-
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.35), transparent 60%);
   opacity:0.6;
   pointer-events:none;
-
   animation: shine 6s ease-in-out infinite;
 }
 
-/* 🌑 глубина снизу */
 .glass::after{
   content:"";
   position:absolute;
   inset:0;
-
-  background: linear-gradient(
-    to bottom,
+  background: linear-gradient(to bottom,
     rgba(255,255,255,0.15),
     transparent 40%,
     rgba(0,0,0,0.25)
   );
-
   opacity:0.5;
   pointer-events:none;
 }
 
-/* 🔥 лёгкое движение света */
 @keyframes shine{
   0%,100%{ transform: translateX(0); }
   50%{ transform: translateX(40px); }
@@ -180,7 +160,6 @@ h1{
   margin:0;
   color:#e0e7ff;
   font-size:78px;
-  text-align:left;
 }
 
 span{ color:#a78bfa; }
@@ -218,6 +197,7 @@ span{ color:#a78bfa; }
 <script>
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
+const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
 function resize(){
   c.width = innerWidth;
@@ -227,16 +207,17 @@ resize();
 addEventListener("resize", resize);
 
 let blobs = [];
+const count = isMobile ? 6 : 10;
 
-for(let i=0;i<10;i++){
+for(let i=0;i<count;i++){
   blobs.push({
     x: Math.random()*innerWidth,
     y: Math.random()*innerHeight,
-    vx: (Math.random()-0.5)*1.2,
-    vy: (Math.random()-0.5)*1.2,
+    vx:(Math.random()-0.5)*1.2,
+    vy:(Math.random()-0.5)*1.2,
     ax:0,
     ay:0,
-    r: 180 + Math.random()*320
+    r: isMobile ? (140 + Math.random()*220) : (180 + Math.random()*320)
   });
 }
 
@@ -257,102 +238,92 @@ function flow(x,y,t){
   return Math.sin(x*0.003+t)*Math.cos(y*0.003-t);
 }
 
-function boundaryForce(b){
-  let margin = 120;
-  let strength = 0.003;
+function boundary(b){
+  let m=120, s=0.003;
 
-  if(b.x < margin) b.ax += (margin - b.x) * strength;
-  if(b.x > innerWidth - margin) b.ax -= (b.x - (innerWidth - margin)) * strength;
+  if(b.x<m) b.ax+=(m-b.x)*s;
+  if(b.x>innerWidth-m) b.ax-=(b.x-(innerWidth-m))*s;
 
-  if(b.y < margin) b.ay += (margin - b.y) * strength;
-  if(b.y > innerHeight - margin) b.ay -= (b.y - (innerHeight - margin)) * strength;
+  if(b.y<m) b.ay+=(m-b.y)*s;
+  if(b.y>innerHeight-m) b.ay-=(b.y-(innerHeight-m))*s;
 }
 
 function draw(){
   ctx.clearRect(0,0,c.width,c.height);
-  ctx.globalCompositeOperation = "lighter";
+  ctx.globalCompositeOperation="lighter";
 
-  let t = Date.now()*0.001;
+  let t=Date.now()*0.001;
 
   for(let i=0;i<blobs.length;i++){
-    let b = blobs[i];
+    let b=blobs[i];
 
-    b.ax += flow(b.x,b.y,t)*0.4;
-    b.ay += flow(b.y,b.x,t)*0.4;
+    b.ax+=flow(b.x,b.y,t)*0.4;
+    b.ay+=flow(b.y,b.x,t)*0.4;
 
-    let dx = p.x - b.x;
-    let dy = p.y - b.y;
-    let d = Math.sqrt(dx*dx+dy*dy);
+    let dx=p.x-b.x, dy=p.y-b.y;
+    let d=Math.sqrt(dx*dx+dy*dy);
 
-    if(d < 900){
-      let f = (1 - d/900)*0.002;
-      b.ax += dx*f;
-      b.ay += dy*f;
+    if(d<900){
+      let f=(1-d/900)*0.002;
+      b.ax+=dx*f;
+      b.ay+=dy*f;
     }
 
-    for(let j=0;j<blobs.length;j++){
+    for(let j=0;j<blobs.length;j+=isMobile?2:1){
       if(i===j) continue;
+      let o=blobs[j];
+      let dx2=b.x-o.x, dy2=b.y-o.y;
+      let dist=Math.sqrt(dx2*dx2+dy2*dy2);
 
-      let o = blobs[j];
-      let dx2 = b.x - o.x;
-      let dy2 = b.y - o.y;
-      let dist = Math.sqrt(dx2*dx2 + dy2*dy2);
-
-      if(dist < 260){
-        let k = (1 - dist/260);
-        b.ax += dx2 * k * 0.02;
-        b.ay += dy2 * k * 0.02;
+      if(dist<260){
+        let k=(1-dist/260);
+        b.ax+=dx2*k*0.02;
+        b.ay+=dy2*k*0.02;
       }
     }
 
-    boundaryForce(b);
+    boundary(b);
 
-    b.vx = (b.vx + b.ax) * 0.9;
-    b.vy = (b.vy + b.ay) * 0.9;
+    b.vx=(b.vx+b.ax)*0.9;
+    b.vy=(b.vy+b.ay)*0.9;
 
-    b.x += b.vx;
-    b.y += b.vy;
+    b.x+=b.vx;
+    b.y+=b.vy;
 
-    b.ax *= 0.5;
-    b.ay *= 0.5;
+    b.ax*=0.5;
+    b.ay*=0.5;
 
-    let g = ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
-// мягкий фиолетовый центр вместо белого
-g.addColorStop(0,"rgba(196,181,253,0.28)");
+    g.addColorStop(0,"rgba(196,181,253,0.28)");
+    g.addColorStop(0.35,"rgba(167,139,250,0.25)");
+    g.addColorStop(0.75,"rgba(139,92,246,0.12)");
+    g.addColorStop(1,"rgba(5,8,22,0)");
 
-// усиленный, но не кислотный фиолет
-g.addColorStop(0.35,"rgba(167,139,250,0.25)");
-
-// плавное затухание с оттенком
-g.addColorStop(0.75,"rgba(139,92,246,0.12)");
-
-g.addColorStop(1,"rgba(5,8,22,0)");
-
-    ctx.fillStyle = g;
+    ctx.fillStyle=g;
 
     ctx.beginPath();
 
-let points = 24;
-for(let k = 0; k <= points; k++){
-  let angle = (k / points) * Math.PI * 2;
+    let points=isMobile?18:24;
 
-  // шум для "жидкости"
-  let noise =
-    Math.sin(angle * 3 + t + i) * 0.15 +
-    Math.cos(angle * 5 + t * 0.7) * 0.1;
+    for(let k=0;k<=points;k++){
+      let a=(k/points)*Math.PI*2;
 
-  let radius = b.r * (1 + noise);
+      let noise=
+        Math.sin(a*3+t+i)*0.15+
+        Math.cos(a*5+t*0.7)*0.1;
 
-  let x = b.x + Math.cos(angle) * radius;
-  let y = b.y + Math.sin(angle) * radius * 0.75;
+      let r=b.r*(1+noise);
 
-  if(k === 0) ctx.moveTo(x, y);
-  else ctx.lineTo(x, y);
-}
+      let x=b.x+Math.cos(a)*r;
+      let y=b.y+Math.sin(a)*r*0.75;
 
-ctx.closePath();
-ctx.fill();
+      if(k===0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+    }
+
+    ctx.closePath();
+    ctx.fill();
   }
 
   requestAnimationFrame(draw);
@@ -360,30 +331,31 @@ ctx.fill();
 draw();
 
 async function load(){
-  let r = await fetch("/state");
-  let d = await r.json();
-  document.getElementById("text").textContent = d.text;
+  let r=await fetch("/state");
+  let d=await r.json();
+  document.getElementById("text").textContent=d.text;
 }
+
 load();
 setInterval(load,1000);
 
-adminBtn.onclick = async ()=>{
-  let pass = prompt("пароль");
-  if(pass !== "4724") return;
+adminBtn.onclick=async()=>{
+  let pass=prompt("пароль");
+  if(pass!=="4724") return;
 
-  let text = prompt("текст");
-  let type = prompt("1-сек 2-мин 3-час");
+  let text=prompt("текст");
+  let type=prompt("1-сек 2-мин 3-час");
 
-  let mult = 1000;
+  let mult=1000;
   if(type==="2") mult=60000;
   if(type==="3") mult=3600000;
 
-  let val = prompt("число");
+  let val=prompt("число");
 
   await fetch("/update",{
     method:"POST",
     headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({text, ms:Number(val)*mult})
+    body:JSON.stringify({text,ms:Number(val)*mult})
   });
 
   load();
