@@ -63,6 +63,7 @@ function updateState() {
 
 setInterval(updateState, 1000);
 
+// API
 app.get("/state", (req, res) => res.json(state));
 
 app.post("/update", (req, res) => {
@@ -76,6 +77,7 @@ app.post("/update", (req, res) => {
   res.json({ ok: true });
 });
 
+// FRONT
 app.get("/", (req, res) => {
   res.send(`
 <!DOCTYPE html>
@@ -99,6 +101,7 @@ canvas{
   inset:0;
 }
 
+/* ====== FIXED GLASS ====== */
 .glass{
   position:absolute;
   top:50%;
@@ -118,6 +121,34 @@ canvas{
 
   border:1px solid rgba(255,255,255,0.18);
   box-shadow:0 8px 40px rgba(0,0,0,0.45);
+
+  /* 🔥 ВАЖНО: фикс слоёв */
+  overflow:hidden;
+  isolation:isolate;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.glass::before{
+  content:"";
+  position:absolute;
+  inset:0;
+
+  border-radius: inherit; /* 🔥 ГЛАВНЫЙ ФИКС */
+
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(255,255,255,0.22),
+    transparent 60%
+  );
+
+  opacity:0.5;
+  pointer-events:none;
+
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 h1{
@@ -171,7 +202,6 @@ function resize(){
 resize();
 addEventListener("resize", resize);
 
-/* МЯГКИЕ ПЛАВАЮЩИЕ ОБЛАКА */
 let blobs = [];
 const count = isMobile ? 14 : 18;
 
@@ -200,11 +230,6 @@ addEventListener("touchmove", e=>{
   p.y = t.clientY;
 });
 
-/* ПЛАВНАЯ СМЕНА ЦВЕТОВ */
-function hueShift(t, i){
-  return 280 + Math.sin(t*0.1 + i)*40; 
-}
-
 function flow(x,y,t){
   return Math.sin(x*0.002+t)*Math.cos(y*0.002-t);
 }
@@ -223,7 +248,7 @@ function draw(){
   ctx.clearRect(0,0,c.width,c.height);
   ctx.globalCompositeOperation="lighter";
 
-  let t = Date.now()*0.001;
+  let t=Date.now()*0.001;
 
   ctx.filter = isMobile ? "blur(30px)" : "blur(40px)";
 
@@ -253,13 +278,12 @@ function draw(){
     b.ax*=0.5;
     b.ay*=0.5;
 
-    /* 🌈 ЦВЕТА: фиолет → розовый → голубой */
-    let hue = hueShift(t, i);
+    let hue = 280 + Math.sin(t*0.1 + i)*40;
 
     let g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
 
     g.addColorStop(0,`hsla(${hue}, 80%, 75%, 0.30)`);
-    g.addColorStop(0.4,`hsla(${hue+20}, 70%, 70%, 0.18)`);
+    g.addColorStop(0.5,`hsla(${hue+20}, 70%, 70%, 0.15)`);
     g.addColorStop(1,"rgba(5,8,22,0)");
 
     ctx.fillStyle=g;
