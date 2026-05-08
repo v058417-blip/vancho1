@@ -5,7 +5,7 @@ const path = require("path");
 const app = express();
 app.use(express.json());
 
-const FILE = path.join(__dirname, "state.json");
+const FILE = "/tmp/state.json";
 
 const variants = ["натурал", "гомосек"];
 
@@ -71,9 +71,15 @@ app.post("/update", (req, res) => {
 
   state.mode = "manual";
   state.text = text;
+
+  // 👇 сохраняем время окончания
   state.until = Date.now() + Math.max(1000, Number(ms) || 0);
 
+  // 👇 чтобы после manual всё не ломалось
+  state.nextChange = state.until + randomInterval();
+
   saveState(state);
+
   res.json({ ok: true });
 });
 
