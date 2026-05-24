@@ -273,8 +273,8 @@ for(let i=0;i<count;i++){
     x: Math.random()*innerWidth,
     y: Math.random()*innerHeight,
 
-    vx:(Math.random()-0.5)*2.5,
-    vy:(Math.random()-0.5)*2.5,
+    vx:(Math.random()-0.5)*1.8,
+    vy:(Math.random()-0.5)*1.8,
 
     ax:0,
     ay:0,
@@ -389,8 +389,8 @@ function draw(){
     }
 
     // 👇 БОЛЕЕ ЖИДКАЯ ИНЕРЦИЯ
-    b.vx=(b.vx+b.ax)*1.2;
-    b.vy=(b.vy+b.ay)*1.2;
+    b.vx=(b.vx+b.ax)*0.985;
+    b.vy=(b.vy+b.ay)*0.985;
 
     b.x+=b.vx;
     b.y+=b.vy;
