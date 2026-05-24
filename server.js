@@ -351,9 +351,10 @@ function draw(){
 
     let d=Math.sqrt(dx*dx+dy*dy);
 
+    // 👇 СЛАБОЕ ПРИТЯЖЕНИЕ
     if(d<900){
 
-      let f=(1-d/900)*0.002;
+      let f=(1-d/900)*0.0007;
 
       b.ax+=dx*f;
       b.ay+=dy*f;
@@ -361,8 +362,35 @@ function draw(){
 
     boundary(b);
 
-    b.vx=(b.vx+b.ax)*0.92;
-    b.vy=(b.vy+b.ay)*0.92;
+    // 👇 ОТТАЛКИВАНИЕ МЕЖДУ BLOBS
+    for(let j=0;j<blobs.length;j++){
+
+      if(i===j) continue;
+
+      let o = blobs[j];
+
+      let dx2 = b.x - o.x;
+      let dy2 = b.y - o.y;
+
+      let dist =
+        Math.sqrt(dx2*dx2 + dy2*dy2);
+
+      let minDist =
+        (b.r + o.r) * 0.35;
+
+      if(dist < minDist){
+
+        let force =
+          (1 - dist/minDist) * 0.003;
+
+        b.ax += dx2 * force;
+        b.ay += dy2 * force;
+      }
+    }
+
+    // 👇 БОЛЕЕ ЖИДКАЯ ИНЕРЦИЯ
+    b.vx=(b.vx+b.ax)*0.96;
+    b.vy=(b.vy+b.ay)*0.96;
 
     b.x+=b.vx;
     b.y+=b.vy;
