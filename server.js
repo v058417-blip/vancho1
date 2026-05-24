@@ -7,7 +7,7 @@ app.use(express.json());
 
 const FILE = "/tmp/state.json";
 
-const variants = ["со мной не дружит", "что то явно не заметил"];
+const variants = ["со мной не дружит", "что ты тут делаешь?"];
 
 function randomInterval() {
   return 60000 + Math.random() * (3 * 24 * 60 * 60 * 1000);
